@@ -4,7 +4,8 @@
         "inputType": "Number"
     },
     "STRING": {
-        "type": "input"
+        "type": "input",
+        "inputType": "text"
     },
     "INT32 '1'": {
         "type": "input",

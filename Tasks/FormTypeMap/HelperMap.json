@@ -1,10 +1,13 @@
 {
     "Extract": {
         "type": "input",
-        "default": "Extract"
+        "inputType": "text",
+        "default": "Extract",
+        "readonly": true
     },
     "string": {
-        "type": "input"
+        "type": "input",
+        "inputType": "text"
     },
     "True|False": {
         "type": "checkbox"
@@ -14,11 +17,14 @@
         "inputType": "Number"
     },
     "PropertyName=Value": {
-        "type": "input"
+        "type": "input",        
+        "inputType": "text"
     },
     "Publish": {
         "type": "input",
-        "default": "Publish"
+        "inputType": "text",
+        "default": "Publish",
+        "readonly": true
     },
     "Interactive|ClientIdSecret": {
         "type": "select",
@@ -29,22 +35,32 @@
     },
     "Export": {
         "type": "input",
-        "default": "Export"
+        "inputType": "text",
+        "default": "Export",
+        "readonly": true
     },
     "Import": {
         "type": "input",
-        "default": "Import"
+        "inputType": "text",
+        "default": "Import",
+        "readonly": true
     },
     "DeployReport": {
         "type": "input",
-        "default": "DeployReport"
+        "inputType": "text",
+        "default": "DeployReport",
+        "readonly": true
     },
     "DriftReport": {
         "type": "input",
-        "default": "DriftReport"
+        "inputType": "text",
+        "default": "DriftReport",
+        "readonly": true
     },
     "Script": {
         "type": "input",
-        "default": "Script"
+        "inputType": "text",
+        "default": "Script",
+        "readonly": true
     }
 }

@@ -7,6 +7,7 @@ const url = "https://raw.githubusercontent.com/MicrosoftDocs/sql-docs/live/docs/
 const mdFileName = "./doc.md";
 const htmlFileName = "./doc.html";
 const jsonFileName = "./doc.json";
+const configFileName = "./config.json";
 
 const labels = [
     "Extract",
@@ -18,6 +19,9 @@ const labels = [
     "Script"
 ]
 
+const helperMap = JSON.parse(fs.readFileSync("./FormTypeMap/HelperMap.json"));
+const PropertyMap = JSON.parse(fs.readFileSync("./FormTypeMap/PropertyMap.json"));
+
 axios.get(url).then(res => {
     const md = res.data.toString();
     fs.writeFileSync(mdFileName, md);
@@ -28,8 +32,8 @@ axios.get(url).then(res => {
     const json = tables.map(t => htmlTableToJson.convert(t.outerHTML));
     fs.writeFileSync(jsonFileName, JSON.stringify(json));
 
-    let helpType = new Set();
-    let propertyType = new Set();
+    // let helpType = new Set();
+    // let propertyType = new Set();
 
     const config = labels.reduce((acc, cur) => {
         const tables = json.splice(0, 2)
@@ -38,20 +42,24 @@ axios.get(url).then(res => {
         const obj = extractHelpAndProperty(tables)
      
         //uniqueType
-        var x = obj.help.filter(v => !!v.Parameter).map(formatHelp);
-        x.map(v => v.type).forEach(t => helpType.add(t));
-        var y = obj.property.filter(v => !!v.Property).map(formatProperty)
-        y.map(v => v.type).forEach(t => propertyType.add(t));
+        const help = obj.help.filter(v => !!v.Parameter).map(formatHelp);
+        // x.map(v => v.type).forEach(t => helpType.add(t));
+        const property = obj.property.filter(v => !!v.Property).map(formatProperty);
+        // y.map(v => v.type).forEach(t => propertyType.add(t));
 
-        acc[cur] = obj;
+        acc[cur] = {
+            help,
+            property
+        };
+        
         return acc;
     }, {})
 
     //write files 
-    fs.writeFileSync("./Props.json", JSON.stringify(Array.from(helpType)));
-    fs.writeFileSync("./propertyType.json", JSON.stringify(Array.from(propertyType)));
+    // fs.writeFileSync("./Props.json", JSON.stringify(Array.from(helpType)));
+    // fs.writeFileSync("./propertyType.json", JSON.stringify(Array.from(propertyType)));
 
-    console.log(config);
+    fs.writeFileSync(configFileName, JSON.stringify(config));
 })
 
 function extractHelpAndProperty(tables) {
@@ -72,23 +80,26 @@ function extractHelpAndProperty(tables) {
 function formatProperty(obj) {
     const { Property, Value, Description  } = obj;
     const [ propName, propType ] = Value.split("=");
+    const docType = extractPropertyValueToFormType(obj);
     return {
-        key: `${Property}${propName}`,
+        model: `${Property}${propName}`,
         desc: Description,
         label: propName,
-        type: extractPropertyValueToFormType(obj)
+        docType,
+        ...PropertyMap[docType]
     };
 }
 
 function formatHelp(obj) {
     const { Parameter, Value, Description } = obj;
-
+    const docType = extractHelpValueToFormType(obj);
     try {
         return {
-            key: `${Parameter}`,
+            model: `${Parameter}`,
             desc: Description,
-            label: Parameter.replace("/"),
-            type: extractHelpValueToFormType(obj)
+            label: Parameter.replace("/", ""),
+            docType,
+            ...helperMap[docType]
         }
     } catch (e) {
         console.error(e);

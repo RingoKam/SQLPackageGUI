@@ -1,0 +1,50 @@
+{
+    "Extract": {
+        "type": "input",
+        "default": "Extract"
+    },
+    "string": {
+        "type": "input"
+    },
+    "True|False": {
+        "type": "checkbox"
+    },
+    "int": {
+        "type": "input",
+        "inputType": "Number"
+    },
+    "PropertyName=Value": {
+        "type": "input"
+    },
+    "Publish": {
+        "type": "input",
+        "default": "Publish"
+    },
+    "Interactive|ClientIdSecret": {
+        "type": "select",
+        "values": [
+            "Interactive",
+            "ClientIdSecret"
+        ]
+    },
+    "Export": {
+        "type": "input",
+        "default": "Export"
+    },
+    "Import": {
+        "type": "input",
+        "default": "Import"
+    },
+    "DeployReport": {
+        "type": "input",
+        "default": "DeployReport"
+    },
+    "DriftReport": {
+        "type": "input",
+        "default": "DriftReport"
+    },
+    "Script": {
+        "type": "input",
+        "default": "Script"
+    }
+}

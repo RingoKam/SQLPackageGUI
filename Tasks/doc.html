@@ -1,0 +1,2835 @@
+<hr>
+<h2>title: SqlPackage.exe
+description: Learn how to automate database development tasks with SqlPackage.exe. View examples and available parameters, properties, and SQLCMD variables.
+ms.prod: sql
+ms.prod_service: sql-tools
+ms.technology: tools-other
+ms.topic: conceptual
+ms.assetid: 198198e2-7cf4-4a21-bda4-51b36cb4284b
+author: &quot;pensivebrian&quot;
+ms.author: &quot;broneill&quot;
+ms.reviewer: &quot;alayu; sstein&quot;
+ms.date: 03/17/2020</h2>
+<h1>SqlPackage.exe</h1>
+<p><strong>SqlPackage.exe</strong> is a command-line utility that automates the following database development tasks:</p>
+<ul>
+<li>
+<p><a href="#help-for-the-extract-action">Extract</a>: Creates a database snapshot (.dacpac) file from a live SQL Server or Azure SQL Database.</p>
+</li>
+<li>
+<p><a href="#publish-parameters-properties-and-sqlcmd-variables">Publish</a>: Incrementally updates a database schema to match the schema of a source .dacpac file. If the database does not exist on the server, the publish operation creates it. Otherwise, an existing database is updated.</p>
+</li>
+<li>
+<p><a href="#export-parameters-and-properties">Export</a>: Exports a live database - including database schema and user data - from SQL Server or Azure SQL Database to a BACPAC package (.bacpac file).</p>
+</li>
+<li>
+<p><a href="#import-parameters-and-properties">Import</a>: Imports the schema and table data from a BACPAC package into a new user database in an instance of SQL Server or Azure SQL Database.</p>
+</li>
+<li>
+<p><a href="#deployreport-parameters-and-properties">DeployReport</a>: Creates an XML report of the changes that would be made by a publish action.</p>
+</li>
+<li>
+<p><a href="#driftreport-parameters">DriftReport</a>: Creates an XML report of the changes that have been made to a registered database since it was last registered.</p>
+</li>
+<li>
+<p><a href="#script-parameters-and-properties">Script</a>: Creates a Transact-SQL incremental update script that updates the schema of a target to match the schema of a source.</p>
+</li>
+</ul>
+<p>The <strong>SqlPackage.exe</strong> command line allows you to specify these actions along with action-specific parameters and properties.</p>
+<p><strong><a href="sqlpackage-download.md">Download the latest version</a></strong>. For details about the latest release, see the <a href="release-notes-sqlpackage.md">release notes</a>.</p>
+<h2>Command-Line Syntax</h2>
+<p><strong>SqlPackage.exe</strong> initiates the actions specified using the parameters, properties, and SQLCMD variables specified on the command line.</p>
+<pre><code>SqlPackage {parameters}{properties}{SQLCMD Variables}  
+</code></pre>
+<h3>Usage examples</h3>
+<p><strong>Generate a comparison between databases by using .dacpac files with a SQL script output</strong></p>
+<p>Start by creating a .dacpac file of your latest database changes:</p>
+<pre><code>sqlpackage.exe /TargetFile:&quot;C:\sqlpackageoutput\output_current_version.dacpac&quot; /Action:Extract /SourceServerName:&quot;.&quot; /SourceDatabaseName:&quot;Contoso.Database&quot;
+</code></pre>
+<p>Create a .dacpac file of your database target (that has no changes):</p>
+<pre><code>sqlpackage.exe /TargetFile:&quot;C:\sqlpackageoutput\output_target.dacpac&quot; /Action:Extract /SourceServerName:&quot;.&quot; /SourceDatabaseName:&quot;Contoso.Database&quot;
+</code></pre>
+<p>Create a SQL script that generates the differences of two .dacpac files:</p>
+<pre><code>sqlpackage.exe /Action:Script /SourceFile:&quot;C:\sqlpackageoutput\output_current_version.dacpac&quot; /TargetFile:&quot;C:\sqlpackageoutput\output_target.dacpac&quot; /TargetDatabaseName:&quot;Contoso.Database&quot; /OutputPath:&quot;C:\sqlpackageoutput\output.sql&quot;
+</code></pre>
+<h3>Help for the Extract action</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Short Form</th>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>/Action:</strong></td>
+<td><strong>/a</strong></td>
+<td>Extract</td>
+<td>Specifies the action to be performed.</td>
+</tr>
+<tr>
+<td><strong>/AccessToken:</strong></td>
+<td><strong>/at</strong></td>
+<td>{string}</td>
+<td>Specifies the token based authentication access token to use when connect to the target database.</td>
+</tr>
+<tr>
+<td><strong>/Diagnostics:</strong></td>
+<td><strong>/d</strong></td>
+<td>{True|False}</td>
+<td>Specifies whether diagnostic logging is output to the console. Defaults to False.</td>
+</tr>
+<tr>
+<td><strong>/DiagnosticsFile:</strong></td>
+<td><strong>/df</strong></td>
+<td>{string}</td>
+<td>Specifies a file to store diagnostic logs.</td>
+</tr>
+<tr>
+<td><strong>/MaxParallelism:</strong></td>
+<td><strong>/mp</strong></td>
+<td>{int}</td>
+<td>Specifies the degree of parallelism for concurrent operations running against a database. The default value is 8.</td>
+</tr>
+<tr>
+<td><strong>/OverwriteFiles:</strong></td>
+<td><strong>/of</strong></td>
+<td>{True|False}</td>
+<td>Specifies if sqlpackage.exe should overwrite existing files. Specifying false causes sqlpackage.exe to abort action if an existing file is encountered. Default value is True.</td>
+</tr>
+<tr>
+<td><strong>/Properties:</strong></td>
+<td><strong>/p</strong></td>
+<td>{PropertyName}={Value}</td>
+<td>Specifies a name value pair for an action-specific property; {PropertyName}={Value}. Refer to the help for a specific action to see that action's property names. Example: sqlpackage.exe /Action:Extract /?.</td>
+</tr>
+<tr>
+<td><strong>/Quiet:</strong></td>
+<td><strong>/q</strong></td>
+<td>{True|False}</td>
+<td>Specifies whether detailed feedback is suppressed. Defaults to False.</td>
+</tr>
+<tr>
+<td><strong>/SourceConnectionString:</strong></td>
+<td><strong>/scs</strong></td>
+<td>{string}</td>
+<td>Specifies a valid SQL Server/Azure connection string to the source database. If this parameter is specified, it shall be used exclusively of all other source parameters.</td>
+</tr>
+<tr>
+<td><strong>/SourceDatabaseName:</strong></td>
+<td><strong>/sdn</strong></td>
+<td>{string}</td>
+<td>Defines the name of the source database.</td>
+</tr>
+<tr>
+<td><strong>/SourceEncryptConnection:</strong></td>
+<td><strong>/sec</strong></td>
+<td>{True|False}</td>
+<td>Specifies if SQL encryption should be used for the source database connection.</td>
+</tr>
+<tr>
+<td><strong>/SourcePassword:</strong></td>
+<td><strong>/sp</strong></td>
+<td>{string}</td>
+<td>For SQL Server Auth scenarios, defines the password to use to access the source database.</td>
+</tr>
+<tr>
+<td><strong>/SourceServerName:</strong></td>
+<td><strong>/ssn</strong></td>
+<td>{string}</td>
+<td>Defines the name of the server hosting the source database.</td>
+</tr>
+<tr>
+<td><strong>/SourceTimeout:</strong></td>
+<td><strong>/st</strong></td>
+<td>{int}</td>
+<td>Specifies the timeout for establishing a connection to the source database in seconds.</td>
+</tr>
+<tr>
+<td><strong>/SourceTrustServerCertificate:</strong></td>
+<td><strong>/stsc</strong></td>
+<td>{True|False}</td>
+<td>Specifies whether to use TLS to encrypt the source database connection and bypass walking the certificate chain to validate trust.</td>
+</tr>
+<tr>
+<td><strong>/SourceUser:</strong></td>
+<td><strong>/su</strong></td>
+<td>{string}</td>
+<td>For SQL Server Auth scenarios, defines the SQL Server user to use to access the source database.</td>
+</tr>
+<tr>
+<td><strong>/TargetFile:</strong></td>
+<td><strong>/tf</strong></td>
+<td>{string}</td>
+<td>Specifies a target file (that is, a .dacpac file) to be used as the target of action instead of a database. If this parameter is used, no other target parameter shall be valid. This parameter shall be invalid for actions that only support database targets.</td>
+</tr>
+<tr>
+<td><strong>/TenantId:</strong></td>
+<td><strong>/tid</strong></td>
+<td>{string}</td>
+<td>Represents the Azure AD tenant ID or domain name. This option is required to support guest or imported Azure AD users as well as Microsoft accounts such as outlook.com, hotmail.com, or live.com. If this parameter is omitted, the default tenant ID for Azure AD will be used, assuming that the authenticated user is a native user for this AD. However, in this case any guest or imported users and/or Microsoft accounts hosted in this Azure AD are not supported and the operation will fail. &lt;br/&gt; For more information about Active Directory Universal Authentication, see <a href="https://docs.microsoft.com/azure/sql-database/sql-database-ssms-mfa-authentication">Universal Authentication with SQL Database and SQL Data Warehouse (SSMS support for MFA)</a>.</td>
+</tr>
+<tr>
+<td><strong>/UniversalAuthentication:</strong></td>
+<td><strong>/ua</strong></td>
+<td>{True|False}</td>
+<td>Specifies if Universal Authentication should be used. When set to True, the interactive authentication protocol is activated supporting MFA. This option can also be used for Azure AD authentication without MFA, using an interactive protocol requiring the user to enter their username and password or integrated authentication (Windows credentials). When /UniversalAuthentication is set to True, no Azure AD authentication can be specified in SourceConnectionString (/scs). When /UniversalAuthentication is set to False, Azure AD authentication must be specified in SourceConnectionString (/scs). &lt;br/&gt; For more information about Active Directory Universal Authentication, see <a href="https://docs.microsoft.com/azure/sql-database/sql-database-ssms-mfa-authentication">Universal Authentication with SQL Database and SQL Data Warehouse (SSMS support for MFA)</a>.</td>
+</tr>
+</tbody>
+</table>
+<h3>Properties specific to the Extract action</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>/p:</strong></td>
+<td>CommandTimeout=(INT32 '60')</td>
+<td>Specifies the command timeout in seconds when executing queries against SQL Server.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DacApplicationDescription=(STRING)</td>
+<td>Defines the Application description to be stored in the DACPAC metadata.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DacApplicationName=(STRING)</td>
+<td>Defined the Application name to be stored in the DACPAC metadata. The default value is the database name.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DacMajorVersion=(INT32 '1')</td>
+<td>Defines the major version to be stored in the DACPAC metadata.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DacMinorVersion=(INT32 '0')</td>
+<td>Defines the minor version to be stored in the DACPAC metadata.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DatabaseLockTimeout=(INT32 '60')</td>
+<td>Specifies the database lock timeout in seconds when executing queries against SQLServer. Use -1 to wait indefinitely.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ExtractAllTableData=(BOOLEAN)</td>
+<td>Indicates whether data from all user tables is extracted. If 'true', data from all user tables is extracted, and you cannot specify individual user tables for extracting data. If 'false', specify one or more user tables to extract data from.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ExtractApplicationScopedObjectsOnly=(BOOLEAN 'True')</td>
+<td>If true, only extract application-scoped objects for the specified source. If false, extract all objects for the specified source.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ExtractReferencedServerScopedElements=(BOOLEAN 'True')</td>
+<td>If true, extract login, server audit, and credential objects referenced by source database objects.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ExtractUsageProperties=(BOOLEAN)</td>
+<td>Specifies whether usage properties, such as table row count and index size, will be extracted from the database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreExtendedProperties=(BOOLEAN)</td>
+<td>Specifies whether extended properties should be ignored.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnorePermissions=(BOOLEAN 'True')</td>
+<td>Specifies whether permissions should be ignored.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreUserLoginMappings=(BOOLEAN)</td>
+<td>Specifies whether relationships between users and logins are ignored.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>LongRunningCommandTimeout=(INT32)</td>
+<td>Specifies the long running command timeout in seconds when executing queries against SQL Server. Use 0 to wait indefinitely.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>Storage=({File|Memory} 'File')</td>
+<td>Specifies the type of backing storage for the schema model used during extraction.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>TableData=(STRING)</td>
+<td>Indicates the table from which data will be extracted. Specify the table name with or without the brackets surrounding the name parts in the following format: schema_name.table_identifier. This option may be specified multiple times.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>TempDirectoryForTableData=(STRING)</td>
+<td>Specifies the temporary directory used to buffer table data before being written to the package file.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>VerifyExtraction=(BOOLEAN)</td>
+<td>Specifies whether the extracted dacpac should be verified.</td>
+</tr>
+</tbody>
+</table>
+<h2>Publish Parameters, Properties, and SQLCMD Variables</h2>
+<p>A SqlPackage.exe publish operation incrementally updates the schema of a target database to match the structure of a source database. Publishing a deployment package that contains user data for all or a subset of tables update the table data in addition to the schema. Data deployment overwrites the schema and data in existing tables of the target database. Data deployment will not change existing schema or data in the target database for tables not included in the deployment package.</p>
+<h3>Help for Publish action</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Short Form</th>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>/Action:</strong></td>
+<td><strong>/a</strong></td>
+<td>Publish</td>
+<td>Specifies the action to be performed.</td>
+</tr>
+<tr>
+<td><strong>/AccessToken:</strong></td>
+<td><strong>/at</strong></td>
+<td>{string}</td>
+<td>Specifies the token based authentication access token to use when connect to the target database.</td>
+</tr>
+<tr>
+<td><strong>/AzureKeyVaultAuthMethod:</strong></td>
+<td><strong>/akv</strong></td>
+<td>{Interactive|ClientIdSecret}</td>
+<td>Specifies what authentication method is used for accessing Azure KeyVault</td>
+</tr>
+<tr>
+<td><strong>/ClientId:</strong></td>
+<td><strong>/cid</strong></td>
+<td>{string}</td>
+<td>Specifies the Client ID to be used in authenticating against Azure KeyVault, when necessary</td>
+</tr>
+<tr>
+<td><strong>/DeployScriptPath:</strong></td>
+<td><strong>/dsp</strong></td>
+<td>{string}</td>
+<td>Specifies an optional file path to output the deployment script. For Azure deployments, if there are TSQL commands to create or modify the master database, a script will be written to the same path but with &quot;Filename_Master.sql&quot; as the output file name.</td>
+</tr>
+<tr>
+<td><strong>/DeployReportPath:</strong></td>
+<td><strong>/drp</strong></td>
+<td>{string}</td>
+<td>Specifies an optional file path to output the deployment report xml file.</td>
+</tr>
+<tr>
+<td><strong>/Diagnostics:</strong></td>
+<td><strong>/d</strong></td>
+<td>{True|False}</td>
+<td>Specifies whether diagnostic logging is output to the console. Defaults to False.</td>
+</tr>
+<tr>
+<td><strong>/DiagnosticsFile:</strong></td>
+<td><strong>/df</strong></td>
+<td>{string}</td>
+<td>Specifies a file to store diagnostic logs.</td>
+</tr>
+<tr>
+<td><strong>/MaxParallelism:</strong></td>
+<td><strong>/mp</strong></td>
+<td>{int}</td>
+<td>Specifies the degree of parallelism for concurrent operations running against a database. The default value is 8.</td>
+</tr>
+<tr>
+<td><strong>/OverwriteFiles:</strong></td>
+<td><strong>/of</strong></td>
+<td>{True|False}</td>
+<td>Specifies if sqlpackage.exe should overwrite existing files. Specifying false causes sqlpackage.exe to abort action if an existing file is encountered. Default value is True.</td>
+</tr>
+<tr>
+<td><strong>/Profile:</strong></td>
+<td><strong>/pr</strong></td>
+<td>{string}</td>
+<td>Specifies the file path to a DAC Publish Profile. The profile defines a collection of properties and variables to use when generating outputs.</td>
+</tr>
+<tr>
+<td><strong>/Properties:</strong></td>
+<td><strong>/p</strong></td>
+<td>{PropertyName}={Value}</td>
+<td>Specifies a name value pair for an action-specific property;{PropertyName}={Value}. Refer to the help for a specific action to see that action's property names. Example: sqlpackage.exe /Action:Publish /?.</td>
+</tr>
+<tr>
+<td><strong>/Quiet:</strong></td>
+<td><strong>/q</strong></td>
+<td>{True|False}</td>
+<td>Specifies whether detailed feedback is suppressed. Defaults to False.</td>
+</tr>
+<tr>
+<td><strong>/Secret:</strong></td>
+<td><strong>/secr</strong></td>
+<td>{string}</td>
+<td>Specifies the Client Secret to be used in authenticating against Azure KeyVault, when necessary</td>
+</tr>
+<tr>
+<td><strong>/SourceConnectionString:</strong></td>
+<td><strong>/scs</strong></td>
+<td>{string}</td>
+<td>Specifies a valid SQL Server/Azure connection string to the source database. If this parameter is specified, it shall be used exclusively of all other source parameters.</td>
+</tr>
+<tr>
+<td><strong>/SourceDatabaseName:</strong></td>
+<td><strong>/sdn</strong></td>
+<td>{string}</td>
+<td>Defines the name of the source database.</td>
+</tr>
+<tr>
+<td><strong>/SourceEncryptConnection:</strong></td>
+<td><strong>/sec</strong></td>
+<td>{True|False}</td>
+<td>Specifies if SQL encryption should be used for the source database connection.</td>
+</tr>
+<tr>
+<td><strong>/SourceFile:</strong></td>
+<td><strong>/sf</strong></td>
+<td>{string}</td>
+<td>Specifies a source file to be used as the source of action instead of a database. If this parameter is used, no other source parameter shall be valid.</td>
+</tr>
+<tr>
+<td><strong>/SourcePassword:</strong></td>
+<td><strong>/sp</strong></td>
+<td>{string}</td>
+<td>For SQL Server Auth scenarios, defines the password to use to access the source database.</td>
+</tr>
+<tr>
+<td><strong>/SourceServerName:</strong></td>
+<td><strong>/ssn</strong></td>
+<td>{string}</td>
+<td>Defines the name of the server hosting the source database.</td>
+</tr>
+<tr>
+<td><strong>/SourceTimeout:</strong></td>
+<td><strong>/st</strong></td>
+<td>{int}</td>
+<td>Specifies the timeout for establishing a connection to the source database in seconds.</td>
+</tr>
+<tr>
+<td><strong>/SourceTrustServerCertificate:</strong></td>
+<td><strong>/stsc</strong></td>
+<td>{True|False}</td>
+<td>Specifies whether to use TLS to encrypt the source database connection and bypass walking the certificate chain to validate trust.</td>
+</tr>
+<tr>
+<td><strong>/SourceUser:</strong></td>
+<td><strong>/su</strong></td>
+<td>{string}</td>
+<td>For SQL Server Auth scenarios, defines the SQL Server user to use to access the source database.</td>
+</tr>
+<tr>
+<td><strong>/TargetConnectionString:</strong></td>
+<td><strong>/tcs</strong></td>
+<td>{string}</td>
+<td>Specifies a valid SQL Server/Azure connection string to the target database. If this parameter is specified, it shall be used exclusively of all other target parameters.</td>
+</tr>
+<tr>
+<td><strong>/TargetDatabaseName:</strong></td>
+<td><strong>/tdn</strong></td>
+<td>{string}</td>
+<td>Specifies an override for the name of the database that is the target of sqlpackage.exe Action.</td>
+</tr>
+<tr>
+<td><strong>/TargetEncryptConnection:</strong></td>
+<td><strong>/tec</strong></td>
+<td>{True|False}</td>
+<td>Specifies if SQL encryption should be used for the target database connection.</td>
+</tr>
+<tr>
+<td><strong>/TargetPassword:</strong></td>
+<td><strong>/tp</strong></td>
+<td>{string}</td>
+<td>For SQL Server Auth scenarios, defines the password to use to access the target database.</td>
+</tr>
+<tr>
+<td><strong>/TargetServerName:</strong></td>
+<td><strong>/tsn</strong></td>
+<td>{string}</td>
+<td>Defines the name of the server hosting the target database.</td>
+</tr>
+<tr>
+<td><strong>/TargetTimeout:</strong></td>
+<td><strong>/tt</strong></td>
+<td>{int}</td>
+<td>Specifies the timeout for establishing a connection to the target database in seconds. For Azure AD, it is recommended that this value be greater than or equal to 30 seconds.</td>
+</tr>
+<tr>
+<td><strong>/TargetTrustServerCertificate:</strong></td>
+<td><strong>/ttsc</strong></td>
+<td>{True|False}</td>
+<td>Specifies whether to use TLS to encrypt the target database connection and bypass walking the certificate chain to validate trust.</td>
+</tr>
+<tr>
+<td><strong>/TargetUser:</strong></td>
+<td><strong>/tu</strong></td>
+<td>{string}</td>
+<td>For SQL Server Auth scenarios, defines the SQL Server user to use to access the target database.</td>
+</tr>
+<tr>
+<td><strong>/TenantId:</strong></td>
+<td><strong>/tid</strong></td>
+<td>{string}</td>
+<td>Represents the Azure AD tenant ID or domain name. This option is required to support guest or imported Azure AD users as well as Microsoft accounts such as outlook.com, hotmail.com, or live.com. If this parameter is omitted, the default tenant ID for Azure AD will be used, assuming that the authenticated user is a native user for this AD. However, in this case any guest or imported users and/or Microsoft accounts hosted in this Azure AD are not supported and the operation will fail. &lt;br/&gt; For more information about Active Directory Universal Authentication, see <a href="https://docs.microsoft.com/azure/sql-database/sql-database-ssms-mfa-authentication">Universal Authentication with SQL Database and SQL Data Warehouse (SSMS support for MFA)</a>.</td>
+</tr>
+<tr>
+<td><strong>/UniversalAuthentication:</strong></td>
+<td><strong>/ua</strong></td>
+<td>{True|False}</td>
+<td>Specifies if Universal Authentication should be used. When set to True, the interactive authentication protocol is activated supporting MFA. This option can also be used for Azure AD authentication without MFA, using an interactive protocol requiring the user to enter their username and password or integrated authentication (Windows credentials). When /UniversalAuthentication is set to True, no Azure AD authentication can be specified in SourceConnectionString (/scs). When /UniversalAuthentication is set to False, Azure AD authentication must be specified in SourceConnectionString (/scs). &lt;br/&gt; For more information about Active Directory Universal Authentication, see <a href="https://docs.microsoft.com/azure/sql-database/sql-database-ssms-mfa-authentication">Universal Authentication with SQL Database and SQL Data Warehouse (SSMS support for MFA)</a>.</td>
+</tr>
+<tr>
+<td><strong>/Variables:</strong></td>
+<td><strong>/v</strong></td>
+<td>{PropertyName}={Value}</td>
+<td>Specifies a name value pair for an action-specific variable;{VariableName}={Value}. The DACPAC file contains the list of valid SQLCMD variables. An error results if a value is not provided for every variable.</td>
+</tr>
+</tbody>
+</table>
+<h3>Properties specific to the Publish action</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>/p:</strong></td>
+<td>AdditionalDeploymentContributorArguments=(STRING)</td>
+<td>Specifies additional deployment contributor arguments for the deployment contributors. This should be a semi-colon delimited list of values.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>AdditionalDeploymentContributors=(STRING)</td>
+<td>Specifies additional deployment contributors, which should run when the dacpac is deployed. This should be a semi-colon delimited list of fully qualified build contributor names or IDs.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>AdditionalDeploymentContributorPaths=(STRING)</td>
+<td>Specifies paths to load additional deployment contributors. This should be a semi-colon delimited list of values.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>AllowDropBlockingAssemblies=(BOOLEAN)</td>
+<td>This property is used by SqlClr deployment to cause any blocking assemblies to be dropped as part of the deployment plan. By default, any blocking/referencing assemblies will block an assembly update if the referencing assembly needs to be dropped.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>AllowIncompatiblePlatform=(BOOLEAN)</td>
+<td>Specifies whether to attempt the action despite incompatible SQL Server platforms.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>AllowUnsafeRowLevelSecurityDataMovement=(BOOLEAN)</td>
+<td>Do not block data motion on a table that has Row Level Security if this property is set to true. Default is false.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>BackupDatabaseBeforeChanges=(BOOLEAN)</td>
+<td>Backups the database before deploying any changes.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>BlockOnPossibleDataLoss=(BOOLEAN 'True')</td>
+<td>Specifies that the publish episode should be terminated if there is a possibility of data loss resulting from the publish.operation.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>BlockWhenDriftDetected=(BOOLEAN 'True')</td>
+<td>Specifies whether to block updating a database whose schema no longer matches its registration or is unregistered.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>CommandTimeout=(INT32 '60')</td>
+<td>Specifies the command timeout in seconds when executing queries against SQL Server.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>CommentOutSetVarDeclarations=(BOOLEAN)</td>
+<td>Specifies whether the declaration of SETVAR variables should be commented out in the generated publish script. You might choose to do this if you plan to specify the values on the command line when you publish by using a tool such as SQLCMD.EXE.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>CompareUsingTargetCollation=(BOOLEAN)</td>
+<td>This setting dictates how the database's collation is handled during deployment; by default the target database's collation will be updated if it does not match the collation specified by the source. When this option is set, the target database's (or server's) collation should be used.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>CreateNewDatabase=(BOOLEAN)</td>
+<td>Specifies whether the target database should be updated or whether it should be dropped and re-created when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DatabaseEdition=({Basic|Standard|Premium|DataWarehouse|GeneralPurpose|BusinessCritical|Hyperscale|Default} 'Default')</td>
+<td>Defines the edition of an Azure SQL Database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DatabaseLockTimeout=(INT32 '60')</td>
+<td>Specifies the database lock timeout in seconds when executing queries against SQLServer. Use -1 to wait indefinitely.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DatabaseMaximumSize=(INT32)</td>
+<td>Defines the maximum size in GB of an Azure SQL Database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DatabaseServiceObjective=(STRING)</td>
+<td>Defines the performance level of an Azure SQL Database such as&quot;P0&quot; or &quot;S1&quot;.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DeployDatabaseInSingleUserMode=(BOOLEAN)</td>
+<td>if true, the database is set to Single User Mode before deploying.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DisableAndReenableDdlTriggers=(BOOLEAN 'True')</td>
+<td>Specifies whether Data Definition Language (DDL) triggers are disabled at the beginning of the publish process and re-enabled at the end of the publish action.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DoNotAlterChangeDataCaptureObjects=(BOOLEAN 'True')</td>
+<td>If true, Change Data Capture objects are not altered.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DoNotAlterReplicatedObjects=(BOOLEAN 'True')</td>
+<td>Specifies whether objects that are replicated are identified during verification.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DoNotDropObjectType=(STRING)</td>
+<td>An object type that should not be dropped when DropObjectsNotInSource is true. Valid object type names are Aggregates, ApplicationRoles, Assemblies, AsymmetricKeys, BrokerPriorities, Certificates, ColumnEncryptionKeys, ColumnMasterKeys, Contracts, DatabaseRoles, DatabaseTriggers, Defaults, ExtendedProperties, ExternalDataSources, ExternalFileFormats, ExternalTables, Filegroups, FileTables, FullTextCatalogs, FullTextStoplists, MessageTypes, PartitionFunctions, PartitionSchemes, Permissions, Queues, RemoteServiceBindings, RoleMembership, Rules, ScalarValuedFunctions, SearchPropertyLists, SecurityPolicies, Sequences, Services, Signatures, StoredProcedures, SymmetricKeys, Synonyms, Tables, TableValuedFunctions, UserDefinedDataTypes, UserDefinedTableTypes, ClrUserDefinedTypes, Users, Views, XmlSchemaCollections, Audits, Credentials, CryptographicProviders, DatabaseAuditSpecifications, DatabaseScopedCredentials, Endpoints, ErrorMessages, EventNotifications, EventSessions, LinkedServerLogins, LinkedServers, Logins, Routes, ServerAuditSpecifications, ServerRoleMembership, ServerRoles, ServerTriggers.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DoNotDropObjectTypes=(STRING)</td>
+<td>A semicolon-delimited list of object types that should not be dropped when DropObjectsNotInSource is true. Valid object type names are Aggregates, ApplicationRoles, Assemblies, AsymmetricKeys, BrokerPriorities, Certificates, ColumnEncryptionKeys, ColumnMasterKeys, Contracts, DatabaseRoles, DatabaseTriggers, Defaults, ExtendedProperties, ExternalDataSources, ExternalFileFormats, ExternalTables, Filegroups, FileTables, FullTextCatalogs, FullTextStoplists, MessageTypes, PartitionFunctions, PartitionSchemes, Permissions, Queues, RemoteServiceBindings, RoleMembership, Rules, ScalarValuedFunctions, SearchPropertyLists, SecurityPolicies, Sequences, Services, Signatures, StoredProcedures, SymmetricKeys, Synonyms, Tables, TableValuedFunctions, UserDefinedDataTypes, UserDefinedTableTypes, ClrUserDefinedTypes, Users, Views, XmlSchemaCollections, Audits, Credentials, CryptographicProviders, DatabaseAuditSpecifications, DatabaseScopedCredentials, Endpoints, ErrorMessages, EventNotifications, EventSessions, LinkedServerLogins, LinkedServers, Logins, Routes, ServerAuditSpecifications, ServerRoleMembership, ServerRoles, ServerTriggers.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DropConstraintsNotInSource=(BOOLEAN 'True')</td>
+<td>Specifies whether constraints that do not exist in the database snapshot (.dacpac) file will be dropped from the target database when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DropDmlTriggersNotInSource=(BOOLEAN 'True')</td>
+<td>Specifies whether DML triggers that do not exist in the database snapshot (.dacpac) file will be dropped from the target database when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DropExtendedPropertiesNotInSource=(BOOLEAN 'True')</td>
+<td>Specifies whether extended properties that do not exist in the database snapshot (.dacpac) file will be dropped from the target database when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DropIndexesNotInSource=(BOOLEAN 'True')</td>
+<td>Specifies whether indexes that do not exist in the database snapshot (.dacpac) file will be dropped from the target database when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DropObjectsNotInSource=(BOOLEAN)</td>
+<td>Specifies whether objects that do not exist in the database snapshot (.dacpac) file will be dropped from the target database when you publish to a database. This value takes precedence over DropExtendedProperties.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DropPermissionsNotInSource=(BOOLEAN)</td>
+<td>Specifies whether permissions that do not exist in the database snapshot (.dacpac) file will be dropped from the target database when you publish updates to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DropRoleMembersNotInSource=(BOOLEAN)</td>
+<td>Specifies whether role members that are not defined in the database snapshot (.dacpac) file will be dropped from the target database when you publish updates to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DropStatisticsNotInSource=(BOOLEAN 'True')</td>
+<td>Specifies whether statistics that do not exist in the database snapshot (.dacpac) file will be dropped from the target database when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ExcludeObjectType=(STRING)</td>
+<td>An object type that should be ignored during deployment. Valid object type names are Aggregates, ApplicationRoles, Assemblies, AsymmetricKeys, BrokerPriorities, Certificates, ColumnEncryptionKeys, ColumnMasterKeys, Contracts, DatabaseRoles, DatabaseTriggers, Defaults, ExtendedProperties, ExternalDataSources, ExternalFileFormats, ExternalTables, Filegroups, FileTables, FullTextCatalogs, FullTextStoplists, MessageTypes, PartitionFunctions, PartitionSchemes, Permissions, Queues, RemoteServiceBindings, RoleMembership, Rules, ScalarValuedFunctions, SearchPropertyLists, SecurityPolicies, Sequences, Services, Signatures, StoredProcedures, SymmetricKeys, Synonyms, Tables, TableValuedFunctions, UserDefinedDataTypes, UserDefinedTableTypes, ClrUserDefinedTypes, Users, Views, XmlSchemaCollections, Audits, Credentials, CryptographicProviders, DatabaseAuditSpecifications, DatabaseScopedCredentials, Endpoints, ErrorMessages, EventNotifications, EventSessions, LinkedServerLogins, LinkedServers, Logins, Routes, ServerAuditSpecifications, ServerRoleMembership, ServerRoles, ServerTriggers.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ExcludeObjectTypes=(STRING)</td>
+<td>A semicolon-delimited list of object types that should be ignored during deployment. Valid object type names are Aggregates, ApplicationRoles, Assemblies, AsymmetricKeys, BrokerPriorities, Certificates, ColumnEncryptionKeys, ColumnMasterKeys, Contracts, DatabaseRoles, DatabaseTriggers, Defaults, ExtendedProperties, ExternalDataSources, ExternalFileFormats, ExternalTables, Filegroups, FileTables, FullTextCatalogs, FullTextStoplists, MessageTypes, PartitionFunctions, PartitionSchemes, Permissions, Queues, RemoteServiceBindings, RoleMembership, Rules, ScalarValuedFunctions, SearchPropertyLists, SecurityPolicies, Sequences, Services, Signatures, StoredProcedures, SymmetricKeys, Synonyms, Tables, TableValuedFunctions, UserDefinedDataTypes, UserDefinedTableTypes, ClrUserDefinedTypes, Users, Views, XmlSchemaCollections, Audits, Credentials, CryptographicProviders, DatabaseAuditSpecifications, DatabaseScopedCredentials, Endpoints, ErrorMessages, EventNotifications, EventSessions, LinkedServerLogins, LinkedServers, Logins, Routes, ServerAuditSpecifications, ServerRoleMembership, ServerRoles, ServerTriggers.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>GenerateSmartDefaults=(BOOLEAN)</td>
+<td>Automatically provides a default value when updating a table that contains data with a column that does not allow null values.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreAnsiNulls=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the ANSI NULLS setting should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreAuthorizer=(BOOLEAN)</td>
+<td>Specifies whether differences in the Authorizer should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreColumnCollation=(BOOLEAN)</td>
+<td>Specifies whether differences in the column collations should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreColumnOrder=(BOOLEAN)</td>
+<td>Specifies whether differences in table column order should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreComments=(BOOLEAN)</td>
+<td>Specifies whether differences in the comments should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreCryptographicProviderFilePath=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the file path for the cryptographic provider should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreDdlTriggerOrder=(BOOLEAN)</td>
+<td>Specifies whether differences in the order of Data Definition Language (DDL) triggers should be ignored or updated when you publish to a database or server.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreDdlTriggerState=(BOOLEAN)</td>
+<td>Specifies whether differences in the enabled or disabled state of Data Definition Language (DDL) triggers should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreDefaultSchema=(BOOLEAN)</td>
+<td>Specifies whether differences in the default schema should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreDmlTriggerOrder=(BOOLEAN)</td>
+<td>Specifies whether differences in the order of Data Manipulation Language (DML) triggers should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreDmlTriggerState=(BOOLEAN)</td>
+<td>Specifies whether differences in the enabled or disabled state of DML triggers should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreExtendedProperties=(BOOLEAN)</td>
+<td>Specifies whether differences in the extended properties should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreFileAndLogFilePath=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the paths for files and log files should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreFilegroupPlacement=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the placement of objects in FILEGROUPs should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreFileSize=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the file sizes should be ignored or whether a warning should be issued when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreFillFactor=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the fill factor for index storage should be ignored or whether a warning should be issued when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreFullTextCatalogFilePath=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the file path for the full-text catalog should be ignored or whether a warning should be issued when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreIdentitySeed=(BOOLEAN)</td>
+<td>Specifies whether differences in the seed for an identity column should be ignored or updated when you publish updates to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreIncrement=(BOOLEAN)</td>
+<td>Specifies whether differences in the increment for an identity column should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreIndexOptions=(BOOLEAN)</td>
+<td>Specifies whether differences in the index options should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreIndexPadding=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the index padding should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreKeywordCasing=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the casing of keywords should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreLockHintsOnIndexes=(BOOLEAN)</td>
+<td>Specifies whether differences in the lock hints on indexes should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreLoginSids=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the security identification number (SID) should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreNotForReplication=(BOOLEAN)</td>
+<td>Specifies whether the not for replication settings should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreObjectPlacementOnPartitionScheme=(BOOLEAN 'True')</td>
+<td>Specifies whether an object's placement on a partition scheme should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnorePartitionSchemes=(BOOLEAN)</td>
+<td>Specifies whether differences in partition schemes and functions should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnorePermissions=(BOOLEAN)</td>
+<td>Specifies whether differences in the permissions should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreQuotedIdentifiers=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the quoted identifiers setting should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreRoleMembership=(BOOLEAN)</td>
+<td>Specifies whether differences in the role membership of logins should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreRouteLifetime=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the amount of time that SQL Server retains the route in the routing table should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreSemicolonBetweenStatements=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the semi-colons between T-SQL statements will be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreTableOptions=(BOOLEAN)</td>
+<td>Specifies whether differences in the table options will be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreTablePartitionOptions=(BOOLEAN)</td>
+<td>Specifies whether differences in the table partition options will be ignored or updated when you publish to a database.  This option applies only to Azure Synapse Analytics SQL pool (data warehouse) databases.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreUserSettingsObjects=(BOOLEAN)</td>
+<td>Specifies whether differences in the user settings objects will be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreWhitespace=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in white space will be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreWithNocheckOnCheckConstraints=(BOOLEAN)</td>
+<td>Specifies whether differences in the value of the WITH NOCHECK clause for check constraints will be ignored or updated when you publish.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreWithNocheckOnForeignKeys=(BOOLEAN)</td>
+<td>Specifies whether differences in the value of the WITH NOCHECK clause for foreign keys will be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IncludeCompositeObjects=(BOOLEAN)</td>
+<td>Include all composite elements as part of a single publish operation.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IncludeTransactionalScripts=(BOOLEAN)</td>
+<td>Specifies whether transactional statements should be used where possible when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>LongRunningCommandTimeout=(INT32)</td>
+<td>Specifies the long running command timeout in seconds when executing queries against SQL Server. Use 0 to wait indefinitely.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>NoAlterStatementsToChangeClrTypes=(BOOLEAN)</td>
+<td>Specifies that publish should always drop and re-create an assembly if there is a difference instead of issuing an ALTER ASSEMBLY statement.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>PopulateFilesOnFileGroups=(BOOLEAN 'True')</td>
+<td>Specifies whether a new file is also created when a new FileGroup is created in the target database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>RegisterDataTierApplication=(BOOLEAN)</td>
+<td>Specifies whether the schema is registered with the database server.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>RunDeploymentPlanExecutors=(BOOLEAN)</td>
+<td>Specifies whether DeploymentPlanExecutor contributors should be run when other operations are executed.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ScriptDatabaseCollation=(BOOLEAN)</td>
+<td>Specifies whether differences in the database collation should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ScriptDatabaseCompatibility=(BOOLEAN)</td>
+<td>Specifies whether differences in the database compatibility should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ScriptDatabaseOptions=(BOOLEAN 'True')</td>
+<td>Specifies whether target database properties should be set or updated as part of the publish action.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ScriptDeployStateChecks=(BOOLEAN)</td>
+<td>Specifies whether statements are generated in the publish script to verify that the database name and server name match the names specified in the database project.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ScriptFileSize=(BOOLEAN)</td>
+<td>Controls whether size is specified when adding a file to a filegroup.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ScriptNewConstraintValidation=(BOOLEAN 'True')</td>
+<td>At the end of publish all of the constraints will be verified as one set, avoiding data errors caused by a check or foreign key constraint in the middle of publish. If set to False, your constraints are published without checking the corresponding data.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ScriptRefreshModule=(BOOLEAN 'True')</td>
+<td>Include refresh statements at the end of the publish script.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>Storage=({File|Memory})</td>
+<td>Specifies how elements are stored when building the database model. For performance reasons the default is InMemory. For large databases, File backed storage is required.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>TreatVerificationErrorsAsWarnings=(BOOLEAN)</td>
+<td>Specifies whether errors encountered during publish verification should be treated as warnings. The check is performed against the generated deployment plan before the plan is executed against your target database. Plan verification detects problems such as the loss of target-only objects (such as indexes) that must be dropped to make a change. Verification will also detect situations where dependencies (such as a table or view) exist because of a reference to a composite project, but do not exist in the target database. You might choose to do this to get a complete list of all issues, instead of having the publish action stop on the first error.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>UnmodifiableObjectWarnings=(BOOLEAN 'True')</td>
+<td>Specifies whether warnings should be generated when differences are found in objects that cannot be modified, for example, if the file size or file paths were different for a file.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>VerifyCollationCompatibility=(BOOLEAN 'True')</td>
+<td>Specifies whether collation compatibility is verified.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>VerifyDeployment=(BOOLEAN 'True')</td>
+<td>Specifies whether checks should be performed before publishing that will stop the publish action if issues are present that might block successful publishing. For example, your publish action might stop if you have foreign keys on the target database that do not exist in the database project, and that causes errors when you publish.</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3>SQLCMD Variables</h3>
+<p>The following table describes the format of the option that you can use to override the value of a SQL command (<strong>sqlcmd</strong>) variable used during a publish action. The values of variable specified on the command line override other values assigned to the variable (for example, in a publish profile).</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>/Variables:{PropertyName}={Value}</strong></td>
+<td></td>
+<td>Specifies a name value pair for an action-specific variable; {VariableName}={Value}. The DACPAC file contains the list of valid SQLCMD variables. An error results if a value is not provided for every variable.</td>
+</tr>
+</tbody>
+</table>
+<h2>Export Parameters and Properties</h2>
+<p>A SqlPackage.exe Export action exports a live database from SQL Server or Azure SQL Database to a BACPAC package (.bacpac file). By default, data for all tables will be included in the .bacpac file. Optionally, you can specify only a subset of tables for which to export data. Validation for the Export action ensures Azure SQL Database compatibility for the complete targeted database even if a subset of tables is specified for the export.</p>
+<h3>Help for Export action</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Short Form</th>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>/Action:</strong></td>
+<td><strong>/a</strong></td>
+<td>Export</td>
+<td>Specifies the action to be performed.</td>
+</tr>
+<tr>
+<td><strong>/AccessToken:</strong></td>
+<td><strong>/at</strong></td>
+<td>{string}</td>
+<td>Specifies the token based authentication access token to use when connect to the target database.</td>
+</tr>
+<tr>
+<td><strong>/Diagnostics:</strong></td>
+<td><strong>/d</strong></td>
+<td>{True|False}</td>
+<td>Specifies whether diagnostic logging is output to the console. Defaults to False.</td>
+</tr>
+<tr>
+<td><strong>/DiagnosticsFile:</strong></td>
+<td><strong>/df</strong></td>
+<td>{string}</td>
+<td>Specifies a file to store diagnostic logs.</td>
+</tr>
+<tr>
+<td><strong>/MaxParallelism:</strong></td>
+<td><strong>/mp</strong></td>
+<td>{int}</td>
+<td>Specifies the degree of parallelism for concurrent operations running against a database. The default value is 8.</td>
+</tr>
+<tr>
+<td><strong>/OverwriteFiles:</strong></td>
+<td><strong>/of</strong></td>
+<td>{True|False}</td>
+<td>Specifies if sqlpackage.exe should overwrite existing files. Specifying false causes sqlpackage.exe to abort action if an existing file is encountered. Default value is True.</td>
+</tr>
+<tr>
+<td><strong>/Properties:</strong></td>
+<td><strong>/p</strong></td>
+<td>{PropertyName}={Value}</td>
+<td>Specifies a name value pair for an action-specific property;{PropertyName}={Value}. Refer to the help for a specific action to see that action's property names. Example: sqlpackage.exe /Action:Export /?.</td>
+</tr>
+<tr>
+<td><strong>/Quiet:</strong></td>
+<td><strong>/q</strong></td>
+<td>{True|False}</td>
+<td>Specifies whether detailed feedback is suppressed. Defaults to False.</td>
+</tr>
+<tr>
+<td><strong>/SourceConnectionString:</strong></td>
+<td><strong>/scs</strong></td>
+<td>{string}</td>
+<td>Specifies a valid SQL Server/Azure connection string to the source database. If this parameter is specified, it shall be used exclusively of all other source parameters.</td>
+</tr>
+<tr>
+<td><strong>/SourceDatabaseName:</strong></td>
+<td><strong>/sdn</strong></td>
+<td>{string}</td>
+<td>Defines the name of the source database.</td>
+</tr>
+<tr>
+<td><strong>/SourceEncryptConnection:</strong></td>
+<td><strong>/sec</strong></td>
+<td>{True|False}</td>
+<td>Specifies if SQL encryption should be used for the source database connection.</td>
+</tr>
+<tr>
+<td><strong>/SourcePassword:</strong></td>
+<td><strong>/sp</strong></td>
+<td>{string}</td>
+<td>For SQL Server Auth scenarios, defines the password to use to access the source database.</td>
+</tr>
+<tr>
+<td><strong>/SourceServerName:</strong></td>
+<td><strong>/ssn</strong></td>
+<td>{string}</td>
+<td>Defines the name of the server hosting the source database.</td>
+</tr>
+<tr>
+<td><strong>/SourceTimeout:</strong></td>
+<td><strong>/st</strong></td>
+<td>{int}</td>
+<td>Specifies the timeout for establishing a connection to the source database in seconds.</td>
+</tr>
+<tr>
+<td><strong>/SourceTrustServerCertificate:</strong></td>
+<td><strong>/stsc</strong></td>
+<td>{True|False}</td>
+<td>Specifies whether to use TLS to encrypt the source database connection and bypass walking the certificate chain to validate trust.</td>
+</tr>
+<tr>
+<td><strong>/SourceUser:</strong></td>
+<td><strong>/su</strong></td>
+<td>{string}</td>
+<td>For SQL Server Auth scenarios, defines the SQL Server user to use to access the source database.</td>
+</tr>
+<tr>
+<td><strong>/TargetFile:</strong></td>
+<td><strong>/tf</strong></td>
+<td>{string}</td>
+<td>Specifies a target file (that is, a .dacpac file) to be used as the target of action instead of a database. If this parameter is used, no other target parameter shall be valid. This parameter shall be invalid for actions that only support database targets.</td>
+</tr>
+<tr>
+<td><strong>/TenantId:</strong></td>
+<td><strong>/tid</strong></td>
+<td>{string}</td>
+<td>Represents the Azure AD tenant ID or domain name. This option is required to support guest or imported Azure AD users as well as Microsoft accounts such as outlook.com, hotmail.com, or live.com. If this parameter is omitted, the default tenant ID for Azure AD will be used, assuming that the authenticated user is a native user for this AD. However, in this case any guest or imported users and/or Microsoft accounts hosted in this Azure AD are not supported and the operation will fail. &lt;br/&gt; For more information about Active Directory Universal Authentication, see <a href="https://docs.microsoft.com/azure/sql-database/sql-database-ssms-mfa-authentication">Universal Authentication with SQL Database and SQL Data Warehouse (SSMS support for MFA)</a>.</td>
+</tr>
+<tr>
+<td><strong>/UniversalAuthentication:</strong></td>
+<td><strong>/ua</strong></td>
+<td>{True|False}</td>
+<td>Specifies if Universal Authentication should be used. When set to True, the interactive authentication protocol is activated supporting MFA. This option can also be used for Azure AD authentication without MFA, using an interactive protocol requiring the user to enter their username and password or integrated authentication (Windows credentials). When /UniversalAuthentication is set to True, no Azure AD authentication can be specified in SourceConnectionString (/scs). When /UniversalAuthentication is set to False, Azure AD authentication must be specified in SourceConnectionString (/scs). &lt;br/&gt; For more information about Active Directory Universal Authentication, see <a href="https://docs.microsoft.com/azure/sql-database/sql-database-ssms-mfa-authentication">Universal Authentication with SQL Database and SQL Data Warehouse (SSMS support for MFA)</a>.</td>
+</tr>
+</tbody>
+</table>
+<h3>Properties specific to the Export action</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>/p:</strong></td>
+<td>CommandTimeout=(INT32 '60')</td>
+<td>Specifies the command timeout in seconds when executing queries against SQL Server.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DatabaseLockTimeout=(INT32 '60')</td>
+<td>Specifies the database lock timeout in seconds when executing queries against SQLServer. Use -1 to wait indefinitely.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>LongRunningCommandTimeout=(INT32)</td>
+<td>Specifies the long running command timeout in seconds when executing queries against SQL Server. Use 0 to wait indefinitely.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>Storage=({File|Memory} 'File')</td>
+<td>Specifies the type of backing storage for the schema model used during extraction.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>TableData=(STRING)</td>
+<td>Indicates the table from which data will be extracted. Specify the table name with or without the brackets surrounding the name parts in the following format: schema_name.table_identifier. This option may be specified multiple times.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>TempDirectoryForTableData=(STRING)</td>
+<td>Specifies the temporary directory used to buffer table data before being written to the package file.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>TargetEngineVersion=({Default|Latest|V11|V12} 'Latest')</td>
+<td>Specifies what the target engine version is expected to be. This affects whether to allow objects supported by Azure SQL Database servers with V12 capabilities, such as memory-optimized tables, in the generated bacpac.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>VerifyFullTextDocumentTypesSupported=(BOOLEAN)</td>
+<td>Specifies whether the supported full-text document types for MicrosoftAzure SQL Database v12 should be verified.</td>
+</tr>
+</tbody>
+</table>
+<h2>Import Parameters and Properties</h2>
+<p>A SqlPackage.exe Import action imports the schema and table data from a BACPAC package - .bacpac file - into a new or empty database in SQL Server or Azure SQL Database. At the time, of the import operation to an existing database, the target database cannot contain any user-defined schema objects.</p>
+<h3>Help for command actions</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Short Form</th>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>/Action:</strong></td>
+<td><strong>/a</strong></td>
+<td>Import</td>
+<td>Specifies the action to be performed.</td>
+</tr>
+<tr>
+<td><strong>/AccessToken:</strong></td>
+<td><strong>/at</strong></td>
+<td>{string}</td>
+<td>Specifies the token based authentication access token to use when connect to the target database.</td>
+</tr>
+<tr>
+<td><strong>/Diagnostics:</strong></td>
+<td><strong>/d</strong></td>
+<td>{True|False}</td>
+<td>Specifies whether diagnostic logging is output to the console. Defaults to False.</td>
+</tr>
+<tr>
+<td><strong>/DiagnosticsFile:</strong></td>
+<td><strong>/df</strong></td>
+<td>{string}</td>
+<td>Specifies a file to store diagnostic logs.</td>
+</tr>
+<tr>
+<td><strong>/MaxParallelism:</strong></td>
+<td><strong>/mp</strong></td>
+<td>{int}</td>
+<td>Specifies the degree of parallelism for concurrent operations running against a database. The default value is 8.</td>
+</tr>
+<tr>
+<td><strong>/Properties:</strong></td>
+<td><strong>/p</strong></td>
+<td>{PropertyName}={Value}</td>
+<td>Specifies a name value pair for an action-specific property;{PropertyName}={Value}. Refer to the help for a specific action to see that action's property names. Example: sqlpackage.exe /Action:Import /?.</td>
+</tr>
+<tr>
+<td><strong>/Quiet:</strong></td>
+<td><strong>/q</strong></td>
+<td>{True|False}</td>
+<td>Specifies whether detailed feedback is suppressed. Defaults to False.</td>
+</tr>
+<tr>
+<td><strong>/SourceFile:</strong></td>
+<td><strong>/sf</strong></td>
+<td>{string}</td>
+<td>Specifies a source file to be used as the source of action. If this parameter is used, no other source parameter shall be valid.</td>
+</tr>
+<tr>
+<td><strong>/TargetConnectionString:</strong></td>
+<td><strong>/tcs</strong></td>
+<td>{string}</td>
+<td>Specifies a valid SQL Server/Azure connection string to the target database. If this parameter is specified, it shall be used exclusively of all other target parameters.</td>
+</tr>
+<tr>
+<td><strong>/TargetDatabaseName:</strong></td>
+<td><strong>/tdn</strong></td>
+<td>{string}</td>
+<td>Specifies an override for the name of the database that is the target ofsqlpackage.exe Action.</td>
+</tr>
+<tr>
+<td><strong>/TargetEncryptConnection:</strong></td>
+<td><strong>/tec</strong></td>
+<td>{True|False}</td>
+<td>Specifies if SQL encryption should be used for the target database connection.</td>
+</tr>
+<tr>
+<td><strong>/TargetPassword:</strong></td>
+<td><strong>/tp</strong></td>
+<td>{string}</td>
+<td>For SQL Server Auth scenarios, defines the password to use to access the target database.</td>
+</tr>
+<tr>
+<td><strong>/TargetServerName:</strong></td>
+<td><strong>/tsn</strong></td>
+<td>{string}</td>
+<td>Defines the name of the server hosting the target database.</td>
+</tr>
+<tr>
+<td><strong>/TargetTimeout:</strong></td>
+<td><strong>/tt</strong></td>
+<td>{int}</td>
+<td>Specifies the timeout for establishing a connection to the target database in seconds. For Azure AD, it is recommended that this value be greater than or equal to 30 seconds.</td>
+</tr>
+<tr>
+<td><strong>/TargetTrustServerCertificate:</strong></td>
+<td><strong>/ttsc</strong></td>
+<td>{True|False}</td>
+<td>Specifies whether to use TLS to encrypt the target database connection and bypass walking the certificate chain to validate trust.</td>
+</tr>
+<tr>
+<td><strong>/TargetUser:</strong></td>
+<td><strong>/tu</strong></td>
+<td>{string}</td>
+<td>For SQL Server Auth scenarios, defines the SQL Server user to use to access the target database.</td>
+</tr>
+<tr>
+<td><strong>/TenantId:</strong></td>
+<td><strong>/tid</strong></td>
+<td>{string}</td>
+<td>Represents the Azure AD tenant ID or domain name. This option is required to support guest or imported Azure AD users as well as Microsoft accounts such as outlook.com, hotmail.com, or live.com. If this parameter is omitted, the default tenant ID for Azure AD will be used, assuming that the authenticated user is a native user for this AD. However, in this case any guest or imported users and/or Microsoft accounts hosted in this Azure AD are not supported and the operation will fail. &lt;br/&gt; For more information about Active Directory Universal Authentication, see <a href="https://docs.microsoft.com/azure/sql-database/sql-database-ssms-mfa-authentication">Universal Authentication with SQL Database and SQL Data Warehouse (SSMS support for MFA)</a>.</td>
+</tr>
+<tr>
+<td><strong>/UniversalAuthentication:</strong></td>
+<td><strong>/ua</strong></td>
+<td>{True|False}</td>
+<td>Specifies if Universal Authentication should be used. When set to True, the interactive authentication protocol is activated supporting MFA. This option can also be used for Azure AD authentication without MFA, using an interactive protocol requiring the user to enter their username and password or integrated authentication (Windows credentials). When /UniversalAuthentication is set to True, no Azure AD authentication can be specified in SourceConnectionString (/scs). When /UniversalAuthentication is set to False, Azure AD authentication must be specified in SourceConnectionString (/scs). &lt;br/&gt; For more information about Active Directory Universal Authentication, see <a href="https://docs.microsoft.com/azure/sql-database/sql-database-ssms-mfa-authentication">Universal Authentication with SQL Database and SQL Data Warehouse (SSMS support for MFA)</a>.</td>
+</tr>
+</tbody>
+</table>
+<p>Properties specific to the Import action:</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>/p:</strong></td>
+<td>CommandTimeout=(INT32 '60')</td>
+<td>Specifies the command timeout in seconds when executing queries against SQL Server.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DatabaseEdition=({Basic|Standard|Premium|DataWarehouse|GeneralPurpose|BusinessCritical|Hyperscale|Default} 'Default')</td>
+<td>Defines the edition of an Azure SQL Database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DatabaseLockTimeout=(INT32 '60')</td>
+<td>Specifies the database lock timeout in seconds when executing queries against SQLServer. Use -1 to wait indefinitely.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DatabaseMaximumSize=(INT32)</td>
+<td>Defines the maximum size in GB of an Azure SQL Database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DatabaseServiceObjective=(STRING)</td>
+<td>Defines the performance level of an Azure SQL Database such as&quot;P0&quot; or &quot;S1&quot;.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ImportContributorArguments=(STRING)</td>
+<td>Specifies deployment contributor arguments for the deployment contributors. This should be a semi-colon delimited list of values.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ImportContributors=(STRING)</td>
+<td>Specifies the deployment contributors, which should run when the bacpac is imported. This should be a semi-colon delimited list of fully qualified build contributor names or IDs.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ImportContributorPaths=(STRING)</td>
+<td>Specifies paths to load additional deployment contributors. This should be a semi-colon delimited list of values.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>LongRunningCommandTimeout=(INT32)</td>
+<td>Specifies the long running command timeout in seconds when executing queries against SQL Server. Use 0 to wait indefinitely.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>Storage=({File|Memory})</td>
+<td>Specifies how elements are stored when building the database model. For performance reasons the default is InMemory. For large databases, File backed storage is required.</td>
+</tr>
+</tbody>
+</table>
+<h2>DeployReport Parameters and Properties</h2>
+<p>A <strong>SqlPackage.exe</strong> report action creates an XML report of the changes that would be made by a publish action.</p>
+<h3>Help for DeployReport action</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Short Form</th>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>/Action:</strong></td>
+<td><strong>/a</strong></td>
+<td>DeployReport</td>
+<td>Specifies the action to be performed.</td>
+</tr>
+<tr>
+<td><strong>/AccessToken:</strong></td>
+<td><strong>/at</strong></td>
+<td>{string}</td>
+<td>Specifies the token based authentication access token to use when connect to the target database.</td>
+</tr>
+<tr>
+<td><strong>/Diagnostics:</strong></td>
+<td><strong>/d</strong></td>
+<td>{True|False}</td>
+<td>Specifies whether diagnostic logging is output to the console. Defaults to False.</td>
+</tr>
+<tr>
+<td><strong>/DiagnosticsFile:</strong></td>
+<td><strong>/df</strong></td>
+<td>{string}</td>
+<td>Specifies a file to store diagnostic logs.</td>
+</tr>
+<tr>
+<td><strong>/MaxParallelism:</strong></td>
+<td><strong>/mp</strong></td>
+<td>{int}</td>
+<td>Specifies the degree of parallelism for concurrent operations running against a database. The default value is 8.</td>
+</tr>
+<tr>
+<td><strong>/OutputPath:</strong></td>
+<td><strong>/op</strong></td>
+<td>{string}</td>
+<td>Specifies the file path where the output files are generated.</td>
+</tr>
+<tr>
+<td><strong>/OverwriteFiles:</strong></td>
+<td><strong>/of</strong></td>
+<td>{True|False}</td>
+<td>Specifies if sqlpackage.exe should overwrite existing files. Specifying false causes sqlpackage.exe to abort action if an existing file is encountered. Default value is True.</td>
+</tr>
+<tr>
+<td><strong>/Profile:</strong></td>
+<td><strong>/pr</strong></td>
+<td>{string}</td>
+<td>Specifies the file path to a DAC Publish Profile. The profile defines a collection of properties and variables to use when generating outputs.</td>
+</tr>
+<tr>
+<td><strong>/Properties:</strong></td>
+<td><strong>/p</strong></td>
+<td>{PropertyName}={Value}</td>
+<td>Specifies a name value pair for an action-specific property; {PropertyName}={Value}. Refer to the help for a specific action to see that action's property names. Example: sqlpackage.exe /Action:DeployReport /?.</td>
+</tr>
+<tr>
+<td><strong>/Quiet:</strong></td>
+<td><strong>/q</strong></td>
+<td>{True|False}</td>
+<td>Specifies whether detailed feedback is suppressed. Defaults to False.</td>
+</tr>
+<tr>
+<td><strong>/SourceConnectionString:</strong></td>
+<td><strong>/scs</strong></td>
+<td>{string}</td>
+<td>Specifies a valid SQL Server/Azure connection string to the source database. If this parameter is specified, it shall be used exclusively of all other source parameters.</td>
+</tr>
+<tr>
+<td><strong>/SourceDatabaseName:</strong></td>
+<td><strong>/sdn</strong></td>
+<td>{string}</td>
+<td>Defines the name of the source database.</td>
+</tr>
+<tr>
+<td><strong>/SourceEncryptConnection:</strong></td>
+<td><strong>/sec</strong></td>
+<td>{True|False}</td>
+<td>Specifies if SQL encryption should be used for the source database connection.</td>
+</tr>
+<tr>
+<td><strong>/SourceFile:</strong></td>
+<td><strong>/sf</strong></td>
+<td>{string}</td>
+<td>Specifies a source file to be used as the source of action instead of a database. If this parameter is used, no other source parameter shall be valid.</td>
+</tr>
+<tr>
+<td><strong>/SourcePassword:</strong></td>
+<td><strong>/sp</strong></td>
+<td>{string}</td>
+<td>For SQL Server Auth scenarios, defines the password to use to access the source database.</td>
+</tr>
+<tr>
+<td><strong>/SourceServerName:</strong></td>
+<td><strong>/ssn</strong></td>
+<td>{string}</td>
+<td>Defines the name of the server hosting the source database.</td>
+</tr>
+<tr>
+<td><strong>/SourceTimeout:</strong></td>
+<td><strong>/st</strong></td>
+<td>{int}</td>
+<td>Specifies the timeout for establishing a connection to the source database in seconds.</td>
+</tr>
+<tr>
+<td><strong>/SourceTrustServerCertificate:</strong></td>
+<td><strong>/stsc</strong></td>
+<td>{True|False}</td>
+<td>Specifies whether to use TLS to encrypt the source database connection and bypass walking the certificate chain to validate trust.</td>
+</tr>
+<tr>
+<td><strong>/SourceUser:</strong></td>
+<td><strong>/su</strong></td>
+<td>{string}</td>
+<td>For SQL Server Auth scenarios, defines the SQL Server user to use to access the source database.</td>
+</tr>
+<tr>
+<td><strong>/TargetConnectionString:</strong></td>
+<td><strong>/tcs</strong></td>
+<td>{string}</td>
+<td>Specifies a valid SQL Server/Azure connection string to the target database. If this parameter is specified, it shall be used exclusively of all other target parameters.</td>
+</tr>
+<tr>
+<td><strong>/TargetDatabaseName:</strong></td>
+<td><strong>/tdn</strong></td>
+<td>{string}</td>
+<td>Specifies an override for the name of the database that is the target of sqlpackage.exe Action.</td>
+</tr>
+<tr>
+<td><strong>/TargetEncryptConnection:</strong></td>
+<td><strong>/tec</strong></td>
+<td>{True|False}</td>
+<td>Specifies if SQL encryption should be used for the target database connection.</td>
+</tr>
+<tr>
+<td><strong>/TargetFile:</strong></td>
+<td><strong>/tf</strong></td>
+<td>{string}</td>
+<td>Specifies a target file (that is, a .dacpac file) to be used as the target of action instead of a database. If this parameter is used, no other target parameter shall be valid. This parameter shall be invalid for actions that only support database targets.</td>
+</tr>
+<tr>
+<td><strong>/TargetPassword:</strong></td>
+<td><strong>/tp</strong></td>
+<td>{string}</td>
+<td>For SQL Server Auth scenarios, defines the password to use to access the target database.</td>
+</tr>
+<tr>
+<td><strong>/TargetServerName:</strong></td>
+<td><strong>/tsn</strong></td>
+<td>{string}</td>
+<td>Defines the name of the server hosting the target database.</td>
+</tr>
+<tr>
+<td><strong>/TargetTimeout:</strong></td>
+<td><strong>/tt</strong></td>
+<td>{int}</td>
+<td>Specifies the timeout for establishing a connection to the target database in seconds. For Azure AD, it is recommended that this value be greater than or equal to 30 seconds.</td>
+</tr>
+<tr>
+<td><strong>/TargetTrustServerCertificate:</strong></td>
+<td><strong>/ttsc</strong></td>
+<td>{True|False}</td>
+<td>Specifies whether to use TLS to encrypt the target database connection and bypass walking the certificate chain to validate trust.</td>
+</tr>
+<tr>
+<td><strong>/TargetUser:</strong></td>
+<td><strong>/tu</strong></td>
+<td>{string}</td>
+<td>For SQL Server Auth scenarios, defines the SQL Server user to use to access the target database.</td>
+</tr>
+<tr>
+<td><strong>/TenantId:</strong></td>
+<td><strong>/tid</strong></td>
+<td>{string}</td>
+<td>Represents the Azure AD tenant ID or domain name. This option is required to support guest or imported Azure AD users as well as Microsoft accounts such as outlook.com, hotmail.com, or live.com. If this parameter is omitted, the default tenant ID for Azure AD will be used, assuming that the authenticated user is a native user for this AD. However, in this case any guest or imported users and/or Microsoft accounts hosted in this Azure AD are not supported and the operation will fail. &lt;br/&gt; For more information about Active Directory Universal Authentication, see <a href="https://docs.microsoft.com/azure/sql-database/sql-database-ssms-mfa-authentication">Universal Authentication with SQL Database and SQL Data Warehouse (SSMS support for MFA)</a>.</td>
+</tr>
+<tr>
+<td><strong>/UniversalAuthentication:</strong></td>
+<td><strong>/ua</strong></td>
+<td>{True|False}</td>
+<td>Specifies if Universal Authentication should be used. When set to True, the interactive authentication protocol is activated supporting MFA. This option can also be used for Azure AD authentication without MFA, using an interactive protocol requiring the user to enter their username and password or integrated authentication (Windows credentials). When /UniversalAuthentication is set to True, no Azure AD authentication can be specified in SourceConnectionString (/scs). When /UniversalAuthentication is set to False, Azure AD authentication must be specified in SourceConnectionString (/scs). &lt;br/&gt; For more information about Active Directory Universal Authentication, see <a href="https://docs.microsoft.com/azure/sql-database/sql-database-ssms-mfa-authentication">Universal Authentication with SQL Database and SQL Data Warehouse (SSMS support for MFA)</a>.</td>
+</tr>
+<tr>
+<td><strong>/Variables:</strong></td>
+<td><strong>/v</strong></td>
+<td>{PropertyName}={Value}</td>
+<td>Specifies a name value pair for an action-specific variable; {VariableName}={Value}. The DACPAC file contains the list of valid SQLCMD variables. An error results if a value is not provided for every variable.</td>
+</tr>
+</tbody>
+</table>
+<h2>Properties specific to the DeployReport action</h2>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>/p:</strong></td>
+<td>AdditionalDeploymentContributorArguments=(STRING)</td>
+<td>Specifies additional deployment contributor arguments for the deployment contributors. This should be a semi-colon delimited list of values.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>AdditionalDeploymentContributors=(STRING)</td>
+<td>Specifies additional deployment contributors, which should run when the dacpac is deployed. This should be a semi-colon delimited list of fully qualified build contributor names or IDs.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>AdditionalDeploymentContributorPaths=(STRING)</td>
+<td>Specifies paths to load additional deployment contributors. This should be a semi-colon delimited list of values.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>AllowDropBlocking Assemblies=(BOOLEAN)</td>
+<td>This property is used by SqlClr deployment to cause any blocking assemblies to be dropped as part of the deployment plan. By default, any blocking/referencing assemblies will block an assembly update if the referencing assembly needs to be dropped.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>AllowIncompatiblePlatform=(BOOLEAN)</td>
+<td>Specifies whether to attempt the action despite incompatible SQL Server platforms.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>AllowUnsafeRowLevelSecurityDataMovement=(BOOLEAN)</td>
+<td>Do not block data motion on a table that has Row Level Security if this property is set to true. Default is false.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>BackupDatabaseBeforeChanges=(BOOLEAN)</td>
+<td>Backups the database before deploying any changes.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>BlockOnPossibleDataLoss=(BOOLEAN 'True')</td>
+<td>Specifies that the publish episode should be terminated if there is a possibility of data loss resulting from the publish.operation.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>BlockWhenDriftDetected=(BOOLEAN 'True')</td>
+<td>Specifies whether to block updating a database whose schema no longer matches its registration or is unregistered.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>CommandTimeout=(INT32 '60')</td>
+<td>Specifies the command timeout in seconds when executing queries against SQL Server.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>CommentOutSetVarDeclarations=(BOOLEAN)</td>
+<td>Specifies whether the declaration of SETVAR variables should be commented out in the generated publish script. You might choose to do this if you plan to specify the values on the command line when you publish by using a tool such as SQLCMD.EXE.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>CompareUsingTargetCollation=(BOOLEAN)</td>
+<td>This setting dictates how the database's collation is handled during deployment; by default the target database's collation will be updated if it does not match the collation specified by the source. When this option is set, the target database's (or server's) collation should be used.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>CreateNewDatabase=(BOOLEAN)</td>
+<td>Specifies whether the target database should be updated or whether it should be dropped and re-created when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DatabaseEdition=({Basic|Standard|Premium|DataWarehouse|GeneralPurpose|BusinessCritical|Hyperscale|Default} 'Default')</td>
+<td>Defines the edition of an Azure SQL Database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DatabaseLockTimeout=(INT32 '60')</td>
+<td>Specifies the database lock timeout in seconds when executing queries against SQLServer. Use -1 to wait indefinitely.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DatabaseMaximumSize=(INT32)</td>
+<td>Defines the maximum size in GB of an Azure SQL Database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DatabaseServiceObjective=(STRING)</td>
+<td>Defines the performance level of an Azure SQL Database such as &quot;P0&quot; or &quot;S1&quot;.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DeployDatabaseInSingleUserMode=(BOOLEAN)</td>
+<td>if true, the database is set to Single User Mode before deploying.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DisableAndReenableDdlTriggers=(BOOLEAN 'True')</td>
+<td>Specifies whether Data Definition Language (DDL) triggers are disabled at the beginning of the publish process and re-enabled at the end of the publish action.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DoNotAlterChangeDataCaptureObjects=(BOOLEAN 'True')</td>
+<td>If true, Change Data Capture objects are not altered.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DoNotAlterReplicatedObjects=(BOOLEAN 'True')</td>
+<td>Specifies whether objects that are replicated are identified during verification.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DoNotDropObjectType=(STRING)</td>
+<td>An object type that should not be dropped when DropObjectsNotInSource is true. Valid object type names are Aggregates, ApplicationRoles, Assemblies, AsymmetricKeys, BrokerPriorities, Certificates, ColumnEncryptionKeys, ColumnMasterKeys, Contracts, DatabaseRoles, DatabaseTriggers, Defaults, ExtendedProperties, ExternalDataSources, ExternalFileFormats, ExternalTables, Filegroups, FileTables, FullTextCatalogs, FullTextStoplists, MessageTypes, PartitionFunctions, PartitionSchemes, Permissions, Queues, RemoteServiceBindings, RoleMembership, Rules, ScalarValuedFunctions, SearchPropertyLists, SecurityPolicies, Sequences, Services, Signatures, StoredProcedures, SymmetricKeys, Synonyms, Tables, TableValuedFunctions, UserDefinedDataTypes, UserDefinedTableTypes, ClrUserDefinedTypes, Users, Views, XmlSchemaCollections, Audits, Credentials, CryptographicProviders, DatabaseAuditSpecifications, DatabaseScopedCredentials, Endpoints, ErrorMessages, EventNotifications, EventSessions, LinkedServerLogins, LinkedServers, Logins, Routes, ServerAuditSpecifications, ServerRoleMembership, ServerRoles, ServerTriggers.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DoNotDropObjectTypes=(STRING)</td>
+<td>A semicolon-delimited list of object types that should not be dropped when DropObjectsNotInSource is true. Valid object type names are Aggregates, ApplicationRoles, Assemblies, AsymmetricKeys, BrokerPriorities, Certificates, ColumnEncryptionKeys, ColumnMasterKeys, Contracts, DatabaseRoles, DatabaseTriggers, Defaults, ExtendedProperties, ExternalDataSources, ExternalFileFormats, ExternalTables, Filegroups, FileTables, FullTextCatalogs, FullTextStoplists, MessageTypes, PartitionFunctions, PartitionSchemes, Permissions, Queues, RemoteServiceBindings, RoleMembership, Rules, ScalarValuedFunctions, SearchPropertyLists, SecurityPolicies, Sequences, Services, Signatures, StoredProcedures, SymmetricKeys, Synonyms, Tables, TableValuedFunctions, UserDefinedDataTypes, UserDefinedTableTypes, ClrUserDefinedTypes, Users, Views, XmlSchemaCollections, Audits, Credentials, CryptographicProviders, DatabaseAuditSpecifications, DatabaseScopedCredentials, Endpoints, ErrorMessages, EventNotifications, EventSessions, LinkedServerLogins, LinkedServers, Logins, Routes, ServerAuditSpecifications, ServerRoleMembership, ServerRoles, ServerTriggers.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DropConstraintsNotInSource=(BOOLEAN 'True')</td>
+<td>Specifies whether constraints that do not exist in the database snapshot (.dacpac) file will be dropped from the target database when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DropDmlTriggersNotInSource=(BOOLEAN 'True')</td>
+<td>Specifies whether DML triggers that do not exist in the database snapshot (.dacpac) file will be dropped from the target database when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DropExtendedPropertiesNotInSource=(BOOLEAN 'True')</td>
+<td>Specifies whether extended properties that do not exist in the database snapshot (.dacpac) file will be dropped from the target database when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DropIndexesNotInSource=(BOOLEAN 'True')</td>
+<td>Specifies whether indexes that do not exist in the database snapshot (.dacpac) file will be dropped from the target database when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DropObjectsNotInSource=(BOOLEAN)</td>
+<td>Specifies whether objects that do not exist in the database snapshot (.dacpac) file will be dropped from the target database when you publish to a database. This value takes precedence over DropExtendedProperties.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DropPermissionsNotInSource=(BOOLEAN)</td>
+<td>Specifies whether permissions that do not exist in the database snapshot (.dacpac) file will be dropped from the target database when you publish updates to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DropRoleMembersNotInSource=(BOOLEAN)</td>
+<td>Specifies whether role members that are not defined in the database snapshot (.dacpac) file will be dropped from the target database when you publish updates to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DropStatisticsNotInSource=(BOOLEAN 'True')</td>
+<td>Specifies whether statistics that do not exist in the database snapshot (.dacpac) file will be dropped from the target database when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ExcludeObjectType=(STRING)</td>
+<td>An object type that should be ignored during deployment. Valid object type names are Aggregates, ApplicationRoles, Assemblies, AsymmetricKeys, BrokerPriorities, Certificates, ColumnEncryptionKeys, ColumnMasterKeys, Contracts, DatabaseRoles, DatabaseTriggers, Defaults, ExtendedProperties, ExternalDataSources, ExternalFileFormats, ExternalTables, Filegroups, FileTables, FullTextCatalogs, FullTextStoplists, MessageTypes, PartitionFunctions, PartitionSchemes, Permissions, Queues, RemoteServiceBindings, RoleMembership, Rules, ScalarValuedFunctions, SearchPropertyLists, SecurityPolicies, Sequences, Services, Signatures, StoredProcedures, SymmetricKeys, Synonyms, Tables, TableValuedFunctions, UserDefinedDataTypes, UserDefinedTableTypes, ClrUserDefinedTypes, Users, Views, XmlSchemaCollections, Audits, Credentials, CryptographicProviders, DatabaseAuditSpecifications, DatabaseScopedCredentials, Endpoints, ErrorMessages, EventNotifications, EventSessions, LinkedServerLogins, LinkedServers, Logins, Routes, ServerAuditSpecifications, ServerRoleMembership, ServerRoles, ServerTriggers.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ExcludeObjectTypes=(STRING)</td>
+<td>A semicolon-delimited list of object types that should be ignored during deployment. Valid object type names are Aggregates, ApplicationRoles, Assemblies, AsymmetricKeys, BrokerPriorities, Certificates, ColumnEncryptionKeys, ColumnMasterKeys, Contracts, DatabaseRoles, DatabaseTriggers, Defaults, ExtendedProperties, ExternalDataSources, ExternalFileFormats, ExternalTables, Filegroups, FileTables, FullTextCatalogs, FullTextStoplists, MessageTypes, PartitionFunctions, PartitionSchemes, Permissions, Queues, RemoteServiceBindings, RoleMembership, Rules, ScalarValuedFunctions, SearchPropertyLists, SecurityPolicies, Sequences, Services, Signatures, StoredProcedures, SymmetricKeys, Synonyms, Tables, TableValuedFunctions, UserDefinedDataTypes, UserDefinedTableTypes, ClrUserDefinedTypes, Users, Views, XmlSchemaCollections, Audits, Credentials, CryptographicProviders, DatabaseAuditSpecifications, DatabaseScopedCredentials, Endpoints, ErrorMessages, EventNotifications, EventSessions, LinkedServerLogins, LinkedServers, Logins, Routes, ServerAuditSpecifications, ServerRoleMembership, ServerRoles, ServerTriggers.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>GenerateSmartDefaults=(BOOLEAN)</td>
+<td>Automatically provides a default value when updating a table that contains data with a column that does not allow null values.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreAnsiNulls=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the ANSI NULLS setting should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreAuthorizer=(BOOLEAN)</td>
+<td>Specifies whether differences in the Authorizer should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreColumnCollation=(BOOLEAN)</td>
+<td>Specifies whether differences in the column collations should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreColumnOrder=(BOOLEAN)</td>
+<td>Specifies whether differences in table column order should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreComments=(BOOLEAN)</td>
+<td>Specifies whether differences in the comments should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreCryptographicProviderFilePath=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the file path for the cryptographic provider should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreDdlTriggerOrder=(BOOLEAN)</td>
+<td>Specifies whether differences in the order of Data Definition Language (DDL) triggers should be ignored or updated when you publish to a database or server.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreDdlTriggerState=(BOOLEAN)</td>
+<td>Specifies whether differences in the enabled or disabled state of Data Definition Language (DDL) triggers should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreDefaultSchema=(BOOLEAN)</td>
+<td>Specifies whether differences in the default schema should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreDmlTriggerOrder=(BOOLEAN)</td>
+<td>Specifies whether differences in the order of Data Manipulation Language (DML) triggers should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreDmlTriggerState=(BOOLEAN)</td>
+<td>Specifies whether differences in the enabled or disabled state of DML triggers should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreExtendedProperties=(BOOLEAN)</td>
+<td>Specifies whether differences in the extended properties should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreFileAndLogFilePath=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the paths for files and log files should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreFilegroupPlacement=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the placement of objects in FILEGROUPs should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreFileSize=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the file sizes should be ignored or whether a warning should be issued when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreFillFactor=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the fill factor for index storage should be ignored or whether a warning should be issued when you publish to a database</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreFullTextCatalogFilePath=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the file path for the full-text catalog should be ignored or whether a warning should be issued when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreIdentitySeed=(BOOLEAN)</td>
+<td>Specifies whether differences in the seed for an identity column should be ignored or updated when you publish updates to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreIncrement=(BOOLEAN)</td>
+<td>Specifies whether differences in the increment for an identity column should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreIndexOptions=(BOOLEAN)</td>
+<td>Specifies whether differences in the index options should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreIndexPadding=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the index padding should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreKeywordCasing=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the casing of keywords should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreLockHintsOnIndexes=(BOOLEAN)</td>
+<td>Specifies whether differences in the lock hints on indexes should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreLoginSids=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the security identification number (SID) should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreNotForReplication=(BOOLEAN)</td>
+<td>Specifies whether the not for replication settings should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreObjectPlacementOnPartitionScheme=(BOOLEAN 'True')</td>
+<td>Specifies whether an object's placement on a partition scheme should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnorePartitionSchemes=(BOOLEAN)</td>
+<td>Specifies whether differences in partition schemes and functions should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnorePermissions=(BOOLEAN)</td>
+<td>Specifies whether differences in the permissions should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreQuotedIdentifiers=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the quoted identifiers setting should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreRoleMembership=(BOOLEAN)</td>
+<td>Specifies whether differences in the role membership of logins should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreRouteLifetime=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the amount of time that SQL Server retains the route in the routing table should be ignored or updated when you publish to a database</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreSemicolonBetweenStatements=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the semi-colons between T-SQL statements will be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreTableOptions=(BOOLEAN)</td>
+<td>Specifies whether differences in the table options will be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreTablePartitionOptions=(BOOLEAN)</td>
+<td>Specifies whether differences in the table partition options will be ignored or updated when you publish to a database.  This option applies only to Azure Synapse Analytics data warehouse databases.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreUserSettingsObjects=(BOOLEAN)</td>
+<td>Specifies whether differences in the user settings objects will be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreWhitespace=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in white space will be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreWithNocheckOnCheckConstraints=(BOOLEAN)</td>
+<td>Specifies whether differences in the value of the WITH NOCHECK clause for check constraints will be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreWithNocheckOnForeignKeys=(BOOLEAN)</td>
+<td>Specifies whether differences in the value of the WITH NOCHECK clause for foreign keys will be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IncludeCompositeObjects=(BOOLEAN)</td>
+<td>Include all composite elements as part of a single publish operation.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IncludeTransactionalScripts=(BOOLEAN)</td>
+<td>Specifies whether transactional statements should be used where possible when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>LongRunningCommandTimeout=(INT32)</td>
+<td>Specifies the long running command timeout in seconds when executing queries against SQL Server. Use 0 to wait indefinitely.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>NoAlterStatementsToChangeClrTypes=(BOOLEAN)</td>
+<td>Specifies that publish should always drop and re-create an assembly if there is a difference instead of issuing an ALTER ASSEMBLY statement.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>PopulateFilesOnFileGroups=(BOOLEAN 'True')</td>
+<td>Specifies whether a new file is also created when a new FileGroup is created in the target database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>RegisterDataTierApplication=(BOOLEAN)</td>
+<td>Specifies whether the schema is registered with the database server.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>RunDeploymentPlanExecutors=(BOOLEAN)</td>
+<td>Specifies whether DeploymentPlanExecutor contributors should be run when other operations are executed.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ScriptDatabaseCollation=(BOOLEAN)</td>
+<td>Specifies whether differences in the database collation should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ScriptDatabaseCompatibility=(BOOLEAN)</td>
+<td>Specifies whether differences in the database compatibility should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ScriptDatabaseOptions=(BOOLEAN 'True')</td>
+<td>Specifies whether target database properties should be set or updated as part of the publish action.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ScriptDeployStateChecks=(BOOLEAN)</td>
+<td>Specifies whether statements are generated in the publish script to verify that the database name and server name match the names specified in the database project.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ScriptFileSize=(BOOLEAN)</td>
+<td>Controls whether size is specified when adding a file to a filegroup.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ScriptNewConstraintValidation=(BOOLEAN 'True')</td>
+<td>At the end of publish all of the constraints will be verified as one set, avoiding data errors caused by a check or foreign key constraint in the middle of publish. If set to False, your constraints are published without checking the corresponding data.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ScriptRefreshModule=(BOOLEAN 'True')</td>
+<td>Include refresh statements at the end of the publish script.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>Storage=({File|Memory})</td>
+<td>Specifies how elements are stored when building the database model. For performance reasons the default is InMemory. For large databases, File backed storage is required.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>TreatVerificationErrorsAsWarnings=(BOOLEAN)</td>
+<td>Specifies whether errors encountered during publish verification should be treated as warnings. The check is performed against the generated deployment plan before the plan is executed against your target database. Plan verification detects problems such as the loss of target-only objects (such as indexes) that must be dropped to make a change. Verification will also detect situations where dependencies (such as a table or view) exist because of a reference to a composite project, but do not exist in the target database. You might choose to do this to get a complete list of all issues, instead of having the publish action stop on the first error.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>UnmodifiableObjectWarnings=(BOOLEAN 'True')</td>
+<td>Specifies whether warnings should be generated when differences are found in objects that cannot be modified, for example, if the file size or file paths were different for a file.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>VerifyCollationCompatibility=(BOOLEAN 'True')</td>
+<td>Specifies whether collation compatibility is verified.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>VerifyDeployment=(BOOLEAN 'True')</td>
+<td>Specifies whether checks should be performed before publishing that will stop the publish action if issues are present that might block successful publishing. For example, your publish action might stop if you have foreign keys on the target database that do not exist in the database project, and that causes errors when you publish.</td>
+</tr>
+</tbody>
+</table>
+<h2>DriftReport Parameters</h2>
+<p>A <strong>SqlPackage.exe</strong> report action creates an XML report of the changes that have been made to the registered database since it was last registered.</p>
+<h3>Help for DriftReport action</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Short Form</th>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>/Action:</strong></td>
+<td><strong>/a</strong></td>
+<td>DriftReport</td>
+<td>Specifies the action to be performed.</td>
+</tr>
+<tr>
+<td><strong>/AccessToken:</strong></td>
+<td><strong>/at</strong></td>
+<td>{string}</td>
+<td>Specifies the token based authentication access token to use when connect to the target database.</td>
+</tr>
+<tr>
+<td><strong>/Diagnostics:</strong></td>
+<td><strong>/d</strong></td>
+<td>{True|False}</td>
+<td>Specifies whether diagnostic logging is output to the console. Defaults to False.</td>
+</tr>
+<tr>
+<td><strong>/DiagnosticsFile:</strong></td>
+<td><strong>/df</strong></td>
+<td>{string}</td>
+<td>Specifies a file to store diagnostic logs.</td>
+</tr>
+<tr>
+<td><strong>/MaxParallelism:</strong></td>
+<td><strong>/mp</strong></td>
+<td>{int}</td>
+<td>Specifies the degree of parallelism for concurrent operations running against a database. The default value is 8.</td>
+</tr>
+<tr>
+<td><strong>/OutputPath:</strong></td>
+<td><strong>/op</strong></td>
+<td>{string}</td>
+<td>Specifies the file path where the output files are generated.</td>
+</tr>
+<tr>
+<td><strong>/OverwriteFiles:</strong></td>
+<td><strong>/of</strong></td>
+<td>{True|False}</td>
+<td>Specifies if sqlpackage.exe should overwrite existing files. Specifying false causes sqlpackage.exe to abort action if an existing file is encountered. Default value is True.</td>
+</tr>
+<tr>
+<td><strong>/Quiet:</strong></td>
+<td><strong>/q</strong></td>
+<td>{True|False}</td>
+<td>Specifies whether detailed feedback is suppressed. Defaults to False.</td>
+</tr>
+<tr>
+<td><strong>/TargetConnectionString:</strong></td>
+<td><strong>/tcs</strong></td>
+<td>{string}</td>
+<td>Specifies a valid SQL Server/Azure connection string to the target database. If this parameter is specified, it shall be used exclusively of all other target parameters.</td>
+</tr>
+<tr>
+<td><strong>/TargetDatabaseName:</strong></td>
+<td><strong>/tdn</strong></td>
+<td>{string}</td>
+<td>Specifies an override for the name of the database that is the target ofsqlpackage.exe Action.</td>
+</tr>
+<tr>
+<td><strong>/TargetEncryptConnection:</strong></td>
+<td><strong>/tec</strong></td>
+<td>{True|False}</td>
+<td>Specifies if SQL encryption should be used for the target database connection.</td>
+</tr>
+<tr>
+<td><strong>/TargetPassword:</strong></td>
+<td><strong>/tp</strong></td>
+<td>{string}</td>
+<td>For SQL Server Auth scenarios, defines the password to use to access the target database.</td>
+</tr>
+<tr>
+<td><strong>/TargetServerName:</strong></td>
+<td><strong>/tsn</strong></td>
+<td>{string}</td>
+<td>Defines the name of the server hosting the target database.</td>
+</tr>
+<tr>
+<td><strong>/TargetTimeout:</strong></td>
+<td><strong>/tt</strong></td>
+<td>{int}</td>
+<td>Specifies the timeout for establishing a connection to the target database in seconds. For Azure AD, it is recommended that this value be greater than or equal to 30 seconds.</td>
+</tr>
+<tr>
+<td><strong>/TargetTrustServerCertificate:</strong></td>
+<td><strong>/ttsc</strong></td>
+<td>{True|False}</td>
+<td>Specifies whether to use TLS to encrypt the target database connection and bypass walking the certificate chain to validate trust.</td>
+</tr>
+<tr>
+<td><strong>/TargetUser:</strong></td>
+<td><strong>/tu</strong></td>
+<td>{string}</td>
+<td>For SQL Server Auth scenarios, defines the SQL Server user to use to access the target database.</td>
+</tr>
+<tr>
+<td><strong>/TenantId:</strong></td>
+<td><strong>/tid</strong></td>
+<td>{string}</td>
+<td>Represents the Azure AD tenant ID or domain name. This option is required to support guest or imported Azure AD users as well as Microsoft accounts such as outlook.com, hotmail.com, or live.com. If this parameter is omitted, the default tenant ID for Azure AD will be used, assuming that the authenticated user is a native user for this AD. However, in this case any guest or imported users and/or Microsoft accounts hosted in this Azure AD are not supported and the operation will fail. &lt;br/&gt; For more information about Active Directory Universal Authentication, see <a href="https://docs.microsoft.com/azure/sql-database/sql-database-ssms-mfa-authentication">Universal Authentication with SQL Database and SQL Data Warehouse (SSMS support for MFA)</a>.</td>
+</tr>
+<tr>
+<td><strong>/UniversalAuthentication:</strong></td>
+<td><strong>/ua</strong></td>
+<td>{True|False}</td>
+<td>Specifies if Universal Authentication should be used. When set to True, the interactive authentication protocol is activated supporting MFA. This option can also be used for Azure AD authentication without MFA, using an interactive protocol requiring the user to enter their username and password or integrated authentication (Windows credentials). When /UniversalAuthentication is set to True, no Azure AD authentication can be specified in SourceConnectionString (/scs). When /UniversalAuthentication is set to False, Azure AD authentication must be specified in SourceConnectionString (/scs). &lt;br/&gt; For more information about Active Directory Universal Authentication, see <a href="https://docs.microsoft.com/azure/sql-database/sql-database-ssms-mfa-authentication">Universal Authentication with SQL Database and SQL Data Warehouse (SSMS support for MFA)</a>.</td>
+</tr>
+</tbody>
+</table>
+<h2>Script Parameters and Properties</h2>
+<p>A <strong>SqlPackage.exe</strong> script action creates a Transact-SQL incremental update script that updates the schema of a target database to match the schema of a source database.</p>
+<h3>Help for the Script action</h3>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Short Form</th>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>/Action:</strong></td>
+<td><strong>/a</strong></td>
+<td>Script</td>
+<td>Specifies the action to be performed.</td>
+</tr>
+<tr>
+<td><strong>/AccessToken:</strong></td>
+<td><strong>/at</strong></td>
+<td>{string}</td>
+<td>Specifies the token based authentication access token to use when connect to the target database.</td>
+</tr>
+<tr>
+<td><strong>/DeployScriptPath:</strong></td>
+<td><strong>/dsp</strong></td>
+<td>{string}</td>
+<td>Specifies an optional file path to output the deployment script. For Azure deployments, if there are TSQL commands to create or modify the master database, a script will be written to the same path but with &quot;Filename_Master.sql&quot; as the output file name.</td>
+</tr>
+<tr>
+<td><strong>/DeployReportPath:</strong></td>
+<td><strong>/drp</strong></td>
+<td>{string}</td>
+<td>Specifies an optional file path to output the deployment report xml file.</td>
+</tr>
+<tr>
+<td><strong>/Diagnostics:</strong></td>
+<td><strong>/d</strong></td>
+<td>{True|False}</td>
+<td>Specifies whether diagnostic logging is output to the console. Defaults to False.</td>
+</tr>
+<tr>
+<td><strong>/DiagnosticsFile:</strong></td>
+<td><strong>/df</strong></td>
+<td>{string}</td>
+<td>Specifies a file to store diagnostic logs.</td>
+</tr>
+<tr>
+<td><strong>/MaxParallelism:</strong></td>
+<td><strong>/mp</strong></td>
+<td>{int}</td>
+<td>Specifies the degree of parallelism for concurrent operations running against a database. The default value is 8.</td>
+</tr>
+<tr>
+<td><strong>/OutputPath:</strong></td>
+<td><strong>/op</strong></td>
+<td>{string}</td>
+<td>Specifies the file path where the output files are generated.</td>
+</tr>
+<tr>
+<td><strong>/OverwriteFiles:</strong></td>
+<td><strong>/of</strong></td>
+<td>{True|False}</td>
+<td>Specifies if sqlpackage.exe should overwrite existing files. Specifying false causes sqlpackage.exe to abort action if an existing file is encountered. Default value is True.</td>
+</tr>
+<tr>
+<td><strong>/Profile:</strong></td>
+<td><strong>/pr</strong></td>
+<td>{string}</td>
+<td>Specifies the file path to a DAC Publish Profile. The profile defines a collection of properties and variables to use when generating outputs.</td>
+</tr>
+<tr>
+<td><strong>/Properties:</strong></td>
+<td><strong>/p</strong></td>
+<td>{PropertyName}={Value}</td>
+<td>Specifies a name value pair for an action-specific property;{PropertyName}={Value}. Refer to the help for a specific action to see that action's property names. Example: sqlpackage.exe /Action:Script /?.</td>
+</tr>
+<tr>
+<td><strong>/Quiet:</strong></td>
+<td><strong>/q</strong></td>
+<td>{True|False}</td>
+<td>Specifies whether detailed feedback is suppressed. Defaults to False.</td>
+</tr>
+<tr>
+<td><strong>/SourceConnectionString:</strong></td>
+<td><strong>/scs</strong></td>
+<td>{string}</td>
+<td>Specifies a valid SQL Server/Azure connection string to the source database. If this parameter is specified, it shall be used exclusively of all other source parameters.</td>
+</tr>
+<tr>
+<td><strong>/SourceDatabaseName:</strong></td>
+<td><strong>/sdn</strong></td>
+<td>{string}</td>
+<td>Defines the name of the source database.</td>
+</tr>
+<tr>
+<td><strong>/SourceEncryptConnection:</strong></td>
+<td><strong>/sec</strong></td>
+<td>{True|False}</td>
+<td>Specifies if SQL encryption should be used for the source database connection.</td>
+</tr>
+<tr>
+<td><strong>/SourceFile:</strong></td>
+<td><strong>/sf</strong></td>
+<td>{string}</td>
+<td>Specifies a source file to be used as the source of action. If this parameter is used, no other source parameter shall be valid.</td>
+</tr>
+<tr>
+<td><strong>/SourcePassword:</strong></td>
+<td><strong>/sp</strong></td>
+<td>{string}</td>
+<td>For SQL Server Auth scenarios, defines the password to use to access the source database.</td>
+</tr>
+<tr>
+<td><strong>/SourceServerName:</strong></td>
+<td><strong>/ssn</strong></td>
+<td>{string}</td>
+<td>Defines the name of the server hosting the source database.</td>
+</tr>
+<tr>
+<td><strong>/SourceTimeout:</strong></td>
+<td><strong>/st</strong></td>
+<td>{int}</td>
+<td>Specifies the timeout for establishing a connection to the source database in seconds.</td>
+</tr>
+<tr>
+<td><strong>/SourceTrustServerCertificate:</strong></td>
+<td><strong>/stsc</strong></td>
+<td>{True|False}</td>
+<td>Specifies whether to use TLS to encrypt the source database connection and bypass walking the certificate chain to validate trust.</td>
+</tr>
+<tr>
+<td><strong>/SourceUser:</strong></td>
+<td><strong>/su</strong></td>
+<td>{string}</td>
+<td>For SQL Server Auth scenarios, defines the SQL Server user to use to access the source database.</td>
+</tr>
+<tr>
+<td><strong>/TargetConnectionString:</strong></td>
+<td><strong>/tcs</strong></td>
+<td>{string}</td>
+<td>Specifies a valid SQL Server/Azure connection string to the target database. If this parameter is specified, it shall be used exclusively of all other target parameters.</td>
+</tr>
+<tr>
+<td><strong>/TargetDatabaseName:</strong></td>
+<td><strong>/tdn</strong></td>
+<td>{string}</td>
+<td>Specifies an override for the name of the database that is the target of sqlpackage.exe Action.</td>
+</tr>
+<tr>
+<td><strong>/TargetEncryptConnection:</strong></td>
+<td><strong>/tec</strong></td>
+<td>{True|False}</td>
+<td>Specifies if SQL encryption should be used for the target database connection.</td>
+</tr>
+<tr>
+<td><strong>/TargetFile:</strong></td>
+<td><strong>/tf</strong></td>
+<td>{string}</td>
+<td>Specifies a target file (that is, a .dacpac file) to be used as the target of action instead of a database. If this parameter is used, no other target parameter shall be valid. This parameter shall be invalid for actions that only support database targets.</td>
+</tr>
+<tr>
+<td><strong>/TargetPassword:</strong></td>
+<td><strong>/tp</strong></td>
+<td>{string}</td>
+<td>For SQL Server Auth scenarios, defines the password to use to access the target database.</td>
+</tr>
+<tr>
+<td><strong>/TargetServerName:</strong></td>
+<td><strong>/tsn</strong></td>
+<td>{string}</td>
+<td>Defines the name of the server hosting the target database.</td>
+</tr>
+<tr>
+<td><strong>/TargetTimeout:</strong></td>
+<td><strong>/tt</strong></td>
+<td>{int}</td>
+<td>Specifies the timeout for establishing a connection to the target database in seconds. For Azure AD, it is recommended that this value be greater than or equal to 30 seconds.</td>
+</tr>
+<tr>
+<td><strong>/TargetTrustServerCertificate:</strong></td>
+<td><strong>/ttsc</strong></td>
+<td>{True|False}</td>
+<td>Specifies whether to use TLS to encrypt the target database connection and bypass walking the certificate chain to validate trust.</td>
+</tr>
+<tr>
+<td><strong>/TargetUser:</strong></td>
+<td><strong>/tu</strong></td>
+<td>{string}</td>
+<td>For SQL Server Auth scenarios, defines the SQL Server user to use to access the target database.</td>
+</tr>
+<tr>
+<td><strong>/TenantId:</strong></td>
+<td><strong>/tid</strong></td>
+<td>{string}</td>
+<td>Represents the Azure AD tenant ID or domain name. This option is required to support guest or imported Azure AD users as well as Microsoft accounts such as outlook.com, hotmail.com, or live.com. If this parameter is omitted, the default tenant ID for Azure AD will be used, assuming that the authenticated user is a native user for this AD. However, in this case any guest or imported users and/or Microsoft accounts hosted in this Azure AD are not supported and the operation will fail. &lt;br/&gt; For more information about Active Directory Universal Authentication, see <a href="https://docs.microsoft.com/azure/sql-database/sql-database-ssms-mfa-authentication">Universal Authentication with SQL Database and SQL Data Warehouse (SSMS support for MFA)</a>.</td>
+</tr>
+<tr>
+<td><strong>/UniversalAuthentication:</strong></td>
+<td><strong>/ua</strong></td>
+<td>{True|False}</td>
+<td>Specifies if Universal Authentication should be used. When set to True, the interactive authentication protocol is activated supporting MFA. This option can also be used for Azure AD authentication without MFA, using an interactive protocol requiring the user to enter their username and password or integrated authentication (Windows credentials). When /UniversalAuthentication is set to True, no Azure AD authentication can be specified in SourceConnectionString (/scs). When /UniversalAuthentication is set to False, Azure AD authentication must be specified in SourceConnectionString (/scs). &lt;br/&gt; For more information about Active Directory Universal Authentication, see <a href="https://docs.microsoft.com/azure/sql-database/sql-database-ssms-mfa-authentication">Universal Authentication with SQL Database and SQL Data Warehouse (SSMS support for MFA)</a>.</td>
+</tr>
+<tr>
+<td><strong>/Variables:</strong></td>
+<td><strong>/v</strong></td>
+<td>{PropertyName}={Value}</td>
+<td>Specifies a name value pair for an action-specific variable;{VariableName}={Value}. The DACPAC file contains the list of valid SQLCMD variables. An error results if a value is not provided for every variable.</td>
+</tr>
+</tbody>
+</table>
+<h3>Properties specific to the Script action</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>/p:</strong></td>
+<td>AdditionalDeploymentContributorArguments=(STRING)</td>
+<td>Specifies additional deployment contributor arguments for the deployment contributors. This should be a semi-colon delimited list of values.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>AdditionalDeploymentContributors=(STRING)</td>
+<td>Specifies additional deployment contributors, which should run when the dacpac is deployed. This should be a semi-colon delimited list of fully qualified build contributor names or IDs.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>AdditionalDeploymentContributorPaths=(STRING)</td>
+<td>Specifies paths to load additional deployment contributors. This should be a semi-colon delimited list of values.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>AllowDropBlockingAssemblies=(BOOLEAN)</td>
+<td>This property is used by SqlClr deployment to cause any blocking assemblies to be dropped as part of the deployment plan. By default, any blocking/referencing assemblies will block an assembly update if the referencing assembly needs to be dropped.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>AllowIncompatiblePlatform=(BOOLEAN)</td>
+<td>Specifies whether to attempt the action despite incompatible SQL Server platforms.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>AllowUnsafeRowLevelSecurityDataMovement=(BOOLEAN)</td>
+<td>Do not block data motion on a table that has Row Level Security if this property is set to true. Default is false.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>BackupDatabaseBeforeChanges=(BOOLEAN)</td>
+<td>Backups the database before deploying any changes.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>BlockOnPossibleDataLoss=(BOOLEAN 'True')</td>
+<td>Specifies that the publish episode should be terminated if there is a possibility of data loss resulting from the publish.operation.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>BlockWhenDriftDetected=(BOOLEAN 'True')</td>
+<td>Specifies whether to block updating a database whose schema no longer matches its registration or is unregistered.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>CommandTimeout=(INT32 '60')</td>
+<td>Specifies the command timeout in seconds when executing queries against SQL Server.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>CommentOutSetVarDeclarations=(BOOLEAN)</td>
+<td>Specifies whether the declaration of SETVAR variables should be commented out in the generated publish script. You might choose to do this if you plan to specify the values on the command line when you publish by using a tool such as SQLCMD.EXE.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>CompareUsingTargetCollation=(BOOLEAN)</td>
+<td>This setting dictates how the database's collation is handled during deployment; by default the target database's collation will be updated if it does not match the collation specified by the source. When this option is set, the target database's (or server's) collation should be used.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>CreateNewDatabase=(BOOLEAN)</td>
+<td>Specifies whether the target database should be updated or whether it should be dropped and re-created when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DatabaseEdition=({Basic|Standard|Premium|DataWarehouse|GeneralPurpose|BusinessCritical|Hyperscale|Default} 'Default')</td>
+<td>Defines the edition of an Azure SQL Database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DatabaseLockTimeout=(INT32 '60')</td>
+<td>Specifies the database lock timeout in seconds when executing queries against SQLServer. Use -1 to wait indefinitely.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DatabaseMaximumSize=(INT32)</td>
+<td>Defines the maximum size in GB of an Azure SQL Database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DatabaseServiceObjective=(STRING)</td>
+<td>Defines the performance level of an Azure SQL Database such as &quot;P0&quot; or &quot;S1&quot;.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DeployDatabaseInSingleUserMode=(BOOLEAN)</td>
+<td>if true, the database is set to Single User Mode before deploying.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DisableAndReenableDdlTriggers=(BOOLEAN 'True')</td>
+<td>Specifies whether Data Definition Language (DDL) triggers are disabled at the beginning of the publish process and re-enabled at the end of the publish action.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DoNotAlterChangeDataCaptureObjects=(BOOLEAN 'True')</td>
+<td>If true, Change Data Capture objects are not altered.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DoNotAlterReplicatedObjects=(BOOLEAN 'True')</td>
+<td>Specifies whether objects that are replicated are identified during verification.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DoNotDropObjectType=(STRING)</td>
+<td>An object type that should not be dropped when DropObjectsNotInSource is true. Valid object type names are Aggregates, ApplicationRoles, Assemblies, AsymmetricKeys, BrokerPriorities, Certificates, ColumnEncryptionKeys, ColumnMasterKeys, Contracts, DatabaseRoles, DatabaseTriggers, Defaults, ExtendedProperties, ExternalDataSources, ExternalFileFormats, ExternalTables, Filegroups, FileTables, FullTextCatalogs, FullTextStoplists, MessageTypes, PartitionFunctions, PartitionSchemes, Permissions, Queues, RemoteServiceBindings, RoleMembership, Rules, ScalarValuedFunctions, SearchPropertyLists, SecurityPolicies, Sequences, Services, Signatures, StoredProcedures, SymmetricKeys, Synonyms, Tables, TableValuedFunctions, UserDefinedDataTypes, UserDefinedTableTypes, ClrUserDefinedTypes, Users, Views, XmlSchemaCollections, Audits, Credentials, CryptographicProviders, DatabaseAuditSpecifications, DatabaseScopedCredentials, Endpoints, ErrorMessages, EventNotifications, EventSessions, LinkedServerLogins, LinkedServers, Logins, Routes, ServerAuditSpecifications, ServerRoleMembership, ServerRoles, ServerTriggers.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DoNotDropObjectTypes=(STRING)</td>
+<td>A semicolon-delimited list of object types that should not be dropped whenDropObjectsNotInSource is true. Valid object type names are Aggregates, ApplicationRoles, Assemblies, AsymmetricKeys, BrokerPriorities, Certificates, ColumnEncryptionKeys, ColumnMasterKeys, Contracts, DatabaseRoles, DatabaseTriggers, Defaults, ExtendedProperties, ExternalDataSources, ExternalFileFormats, ExternalTables, Filegroups, FileTables, FullTextCatalogs, FullTextStoplists, MessageTypes, PartitionFunctions, PartitionSchemes, Permissions, Queues, RemoteServiceBindings, RoleMembership, Rules, ScalarValuedFunctions, SearchPropertyLists, SecurityPolicies, Sequences, Services, Signatures, StoredProcedures, SymmetricKeys, Synonyms, Tables, TableValuedFunctions, UserDefinedDataTypes, UserDefinedTableTypes, ClrUserDefinedTypes, Users, Views, XmlSchemaCollections, Audits, Credentials, CryptographicProviders, DatabaseAuditSpecifications, DatabaseScopedCredentials, Endpoints, ErrorMessages, EventNotifications, EventSessions, LinkedServerLogins, LinkedServers, Logins, Routes, ServerAuditSpecifications, ServerRoleMembership, ServerRoles, ServerTriggers.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DropConstraintsNotInSource=(BOOLEAN 'True')</td>
+<td>Specifies whether constraints that do not exist in the database snapshot (.dacpac) file will be dropped from the target database when you a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DropDmlTriggersNotInSource=(BOOLEAN 'True')</td>
+<td>Specifies whether DML triggers that do not exist in the database snapshot (.dacpac) file will be dropped from the target database when you a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DropExtendedPropertiesNotInSource=(BOOLEAN 'True')</td>
+<td>Specifies whether extended properties that do not exist in the database snapshot (.dacpac) file will be dropped from the target database when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DropIndexesNotInSource=(BOOLEAN 'True')</td>
+<td>Specifies whether indexes that do not exist in the database snapshot (.dacpac) file will be dropped from the target database when you a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DropObjectsNotInSource=(BOOLEAN)</td>
+<td>Specifies whether objects that do not exist in the database snapshot (.dacpac) file will be dropped from the target database when you a database. This value takes precedence over DropExtendedProperties.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DropPermissionsNotInSource=(BOOLEAN)</td>
+<td>Specifies whether permissions that do not exist in the database snapshot (.dacpac) file will be dropped from the target database when you publish updates to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DropRoleMembersNotInSource=(BOOLEAN)</td>
+<td>Specifies whether role members that are not defined in the database snapshot (.dacpac) file will be dropped from the target database when you publish updates to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>DropStatisticsNotInSource=(BOOLEAN 'True')</td>
+<td>Specifies whether statistics that do not exist in the database snapshot (.dacpac) file will be dropped from the target database when you a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ExcludeObjectType=(STRING)</td>
+<td>An object type that should be ignored during deployment. Valid object type names are Aggregates, ApplicationRoles, Assemblies, AsymmetricKeys, BrokerPriorities, Certificates, ColumnEncryptionKeys, ColumnMasterKeys, Contracts, DatabaseRoles, DatabaseTriggers, Defaults, ExtendedProperties, ExternalDataSources, ExternalFileFormats, ExternalTables, Filegroups, FileTables, FullTextCatalogs, FullTextStoplists, MessageTypes, PartitionFunctions, PartitionSchemes, Permissions, Queues, RemoteServiceBindings, RoleMembership, Rules, ScalarValuedFunctions, SearchPropertyLists, SecurityPolicies, Sequences, Services, Signatures, StoredProcedures, SymmetricKeys, Synonyms, Tables, TableValuedFunctions, UserDefinedDataTypes, UserDefinedTableTypes, ClrUserDefinedTypes, Users, Views, XmlSchemaCollections, Audits, Credentials, CryptographicProviders, DatabaseAuditSpecifications, DatabaseScopedCredentials, Endpoints, ErrorMessages, EventNotifications, EventSessions, LinkedServerLogins, LinkedServers, Logins, Routes, ServerAuditSpecifications, ServerRoleMembership, ServerRoles, ServerTriggers.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ExcludeObjectTypes=(STRING)</td>
+<td>A semicolon-delimited list of object types that should be ignored during deployment. Valid object type names are Aggregates, ApplicationRoles, Assemblies, AsymmetricKeys, BrokerPriorities, Certificates, ColumnEncryptionKeys, ColumnMasterKeys, Contracts, DatabaseRoles, DatabaseTriggers, Defaults, ExtendedProperties, ExternalDataSources, ExternalFileFormats, ExternalTables, Filegroups, FileTables, FullTextCatalogs, FullTextStoplists, MessageTypes, PartitionFunctions, PartitionSchemes, Permissions, Queues, RemoteServiceBindings, RoleMembership, Rules, ScalarValuedFunctions, SearchPropertyLists, SecurityPolicies, Sequences, Services, Signatures, StoredProcedures, SymmetricKeys, Synonyms, Tables, TableValuedFunctions, UserDefinedDataTypes, UserDefinedTableTypes, ClrUserDefinedTypes, Users, Views, XmlSchemaCollections, Audits, Credentials, CryptographicProviders, DatabaseAuditSpecifications, DatabaseScopedCredentials, Endpoints, ErrorMessages, EventNotifications, EventSessions, LinkedServerLogins, LinkedServers, Logins, Routes, ServerAuditSpecifications, ServerRoleMembership, ServerRoles, ServerTriggers.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>GenerateSmartDefaults=(BOOLEAN)</td>
+<td>Automatically provides a default value when updating a table that contains data with a column that does not allow null values.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreAnsiNulls=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the ANSI NULLS setting should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreAuthorizer=(BOOLEAN)</td>
+<td>Specifies whether differences in the Authorizer should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreColumnCollation=(BOOLEAN)</td>
+<td>Specifies whether differences in the column collations should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreColumnOrder=(BOOLEAN)</td>
+<td>Specifies whether differences in table column order should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreComments=(BOOLEAN)</td>
+<td>Specifies whether differences in the comments should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreCryptographicProviderFilePath=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the file path for the cryptographic provider should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreDdlTriggerOrder=(BOOLEAN)</td>
+<td>Specifies whether differences in the order of Data Definition Language (DDL) triggers should be ignored or updated when you publish to a database or server.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreDdlTriggerState=(BOOLEAN)</td>
+<td>Specifies whether differences in the enabled or disabled state of Data Definition Language (DDL) triggers should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreDefaultSchema=(BOOLEAN)</td>
+<td>Specifies whether differences in the default schema should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreDmlTriggerOrder=(BOOLEAN)</td>
+<td>Specifies whether differences in the order of Data Manipulation Language (DML) triggers should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreDmlTriggerState=(BOOLEAN)</td>
+<td>Specifies whether differences in the enabled or disabled state of DML triggers should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreExtendedProperties=(BOOLEAN)</td>
+<td>Specifies whether differences in the extended properties should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreFileAndLogFilePath=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the paths for files and log files should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreFilegroupPlacement=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the placement of objects in FILEGROUPs should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreFileSize=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the file sizes should be ignored or whether a warning should be issued when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreFillFactor=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the fill factor for index storage should be ignored or whether a warning should be issued when you publish.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreFullTextCatalogFilePath=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the file path for the full-text be ignored or whether a warning should be issued when you a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreIdentitySeed=(BOOLEAN)</td>
+<td>Specifies whether differences in the seed for an identity column should be ignored or updated when you publish updates to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreIncrement=(BOOLEAN)</td>
+<td>Specifies whether differences in the increment for an identity column should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreIndexOptions=(BOOLEAN)</td>
+<td>Specifies whether differences in the index options should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreIndexPadding=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the index padding should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreKeywordCasing=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the casing of keywords should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreLockHintsOnIndexes=(BOOLEAN)</td>
+<td>Specifies whether differences in the lock hints on indexes should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreLoginSids=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the security identification number (SID) should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreNotForReplication=(BOOLEAN)</td>
+<td>Specifies whether the not for replication settings should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreObjectPlacementOnPartitionScheme=(BOOLEAN 'True')</td>
+<td>Specifies whether an object's placement on a partition scheme should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnorePartitionSchemes=(BOOLEAN)</td>
+<td>Specifies whether differences in partition schemes and functions should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnorePermissions=(BOOLEAN)</td>
+<td>Specifies whether differences in the permissions should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreQuotedIdentifiers=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the quoted identifiers setting should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreRoleMembership=(BOOLEAN)</td>
+<td>Specifies whether differences in the role membership of logins should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreRouteLifetime=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the amount of time that SQL Server retains the route in the routing table should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreSemicolonBetweenStatements=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in the semi-colons between T-SQL statements will be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreTableOptions=(BOOLEAN)</td>
+<td>Specifies whether differences in the table options will be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreTablePartitionOptions=(BOOLEAN)</td>
+<td>Specifies whether differences in the table partition options will be ignored or updated when you publish to a database.  This option applies only to Azure Synapse Analytics data warehouse databases.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreUserSettingsObjects=(BOOLEAN)</td>
+<td>Specifies whether differences in the user settings objects will be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreWhitespace=(BOOLEAN 'True')</td>
+<td>Specifies whether differences in white space will be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreWithNocheckOnCheckConstraints=(BOOLEAN)</td>
+<td>Specifies whether differences in the value of the WITH NOCHECK clause for check constraints will be ignored or updated when you publish.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IgnoreWithNocheckOnForeignKeys=(BOOLEAN)</td>
+<td>Specifies whether differences in the value of the WITH NOCHECK clause for foreign keys will be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IncludeCompositeObjects=(BOOLEAN)</td>
+<td>Include all composite elements as part of a single publish operation.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>IncludeTransactionalScripts=(BOOLEAN)</td>
+<td>Specifies whether transactional statements should be used where possible when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>LongRunningCommandTimeout=(INT32)</td>
+<td>Specifies the long running command timeout in seconds when executing queries against SQL Server. Use 0 to wait indefinitely.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>NoAlterStatementsToChangeClrTypes=(BOOLEAN)</td>
+<td>Specifies that publish should always drop and re-create an assembly if there is a difference instead of issuing an ALTER ASSEMBLY statement.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>PopulateFilesOnFileGroups=(BOOLEAN 'True')</td>
+<td>Specifies whether a new file is also created when a new FileGroup is created in the target database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>RegisterDataTierApplication=(BOOLEAN)</td>
+<td>Specifies whether the schema is registered with the database server.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>RunDeploymentPlanExecutors=(BOOLEAN)</td>
+<td>Specifies whether DeploymentPlanExecutor contributors should be run when other operations are executed.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ScriptDatabaseCollation=(BOOLEAN)</td>
+<td>Specifies whether differences in the database collation should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ScriptDatabaseCompatibility=(BOOLEAN)</td>
+<td>Specifies whether differences in the database compatibility should be ignored or updated when you publish to a database.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ScriptDatabaseOptions=(BOOLEAN 'True')</td>
+<td>Specifies whether target database properties should be set or updated as part of the publish action.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ScriptDeployStateChecks=(BOOLEAN)</td>
+<td>Specifies whether statements are generated in the publish script to verify that the database name and server name match the names specified in the database project.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ScriptFileSize=(BOOLEAN)</td>
+<td>Controls whether size is specified when adding a file to a filegroup.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ScriptNewConstraintValidation=(BOOLEAN 'True')</td>
+<td>At the end of publish all of the constraints will be verified as one set, avoiding data errors caused by a check or foreign key constraint in the middle of publish. If set to False, your constraints are published without checking the corresponding data.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>ScriptRefreshModule=(BOOLEAN 'True')</td>
+<td>Include refresh statements at the end of the publish script.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>Storage=({File|Memory})</td>
+<td>Specifies how elements are stored when building the database model. For performance reasons the default is InMemory. For large databases, File backed storage is required.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>TreatVerificationErrorsAsWarnings=(BOOLEAN)</td>
+<td>Specifies whether errors encountered during publish verification should be treated as warnings. The check is performed against the generated deployment plan before the plan is executed against your target database. Plan verification detects problems such as the loss of target-only objects (such as indexes) that must be dropped to make a change. Verification will also detect situations where dependencies (such as a table or view) exist because of a reference to a composite project, but do not exist in the target database. You might choose to do this to get a complete list of all issues, instead of having the publish action stop on the first error.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>UnmodifiableObjectWarnings=(BOOLEAN 'True')</td>
+<td>Specifies whether warnings should be generated when differences are found in objects that cannot be modified, for example, if the file size or file paths were different for a file.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>VerifyCollationCompatibility=(BOOLEAN 'True')</td>
+<td>Specifies whether collation compatibility is verified.</td>
+</tr>
+<tr>
+<td><strong>/p:</strong></td>
+<td>VerifyDeployment=(BOOLEAN 'True')</td>
+<td>Specifies whether checks should be performed before publishing that will stop the publish action if issues are present that might block successful publishing. For example, your publish action might stop if you have foreign keys on the target database that do not exist in the database project, and that causes errors when you publish.</td>
+</tr>
+</tbody>
+</table>
+<h2>Exit codes</h2>
+<p>Commands that return the following exit codes:</p>
+<ul>
+<li>0 = success</li>
+<li>non-zero = failure</li>
+</ul>

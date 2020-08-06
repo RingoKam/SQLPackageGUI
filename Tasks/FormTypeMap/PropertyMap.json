@@ -1,0 +1,63 @@
+{
+    "INT32 '60'": {
+        "type": "input",
+        "inputType": "Number"
+    },
+    "STRING": {
+        "type": "input"
+    },
+    "INT32 '1'": {
+        "type": "input",
+        "inputType": "Number"
+    },
+    "INT32 '0'": {
+        "type": "input",
+        "inputType": "Number"
+    },
+    "BOOLEAN": {
+        "type": "checkbox"
+    },
+    "BOOLEAN 'True'": {
+        "type": "checkbox"
+    },
+    "INT32": {
+        "type": "input",
+        "inputType": "Number"
+    },
+    "{File|Memory} 'File'": {
+        "type": "select",
+        "values": [
+            "File",
+            "Memory"
+        ]
+    },
+    "{Basic|Standard|Premium|DataWarehouse|GeneralPurpose|BusinessCritical|Hyperscale|Default} 'Default'": {
+        "type": "select",
+        "values": [
+            "Basic",
+            "Standard",
+            "Premium",
+            "DataWarehouse",
+            "GeneralPurpose",
+            "BusinessCritical",
+            "Hyperscale",
+            "Default"
+        ]
+    },
+    "{File|Memory}": {
+        "type": "select",
+        "values": [
+            "File",
+            "Memory"
+        ]
+    },
+    "{Default|Latest|V11|V12} 'Latest'": {
+        "type": "select",
+        "values": [
+            "Default",
+            "Latest",
+            "V11",
+            "V12"
+        ]
+    }
+}
